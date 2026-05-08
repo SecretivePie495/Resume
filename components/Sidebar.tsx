@@ -20,11 +20,11 @@ function GoldenMailbox() {
 
   useEffect(() => {
     fetch('/api/usage')
-      .then(r => r.json())
-      .then(d => setInboxAccess(d.inboxAccess ?? false));
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setInboxAccess(d?.inboxAccess ?? false));
     fetch('/api/gmail/status')
-      .then(r => r.json())
-      .then(d => { if (d.connected) setUnread(d.unread ?? 0); });
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.connected) setUnread(d.unread ?? 0); });
   }, []);
 
   if (inboxAccess === null) return null;
