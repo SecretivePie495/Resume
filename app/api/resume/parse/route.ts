@@ -18,9 +18,10 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      // Use internal path to avoid pdf-parse loading test files that don't exist in serverless
-      const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-      const result = await pdfParse(buffer);
+      const { PDFParse } = await import('pdf-parse');
+      const parser = new PDFParse({ data: new Uint8Array(buffer) });
+      const result = await parser.getText();
+      await parser.destroy();
       text = result.text;
     } else {
       const mammoth = await import('mammoth');
@@ -33,7 +34,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ text: cleaned });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: 'Failed to parse file' }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[parse] failed:', msg, e);
+    return NextResponse.json({ error: `Failed to parse file: ${msg}` }, { status: 500 });
   }
 }
