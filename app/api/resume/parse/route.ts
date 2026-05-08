@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      const pdfParse = (await import('pdf-parse')).default;
+      // Use internal path to avoid pdf-parse loading test files that don't exist in serverless
+      const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
       const result = await pdfParse(buffer);
       text = result.text;
     } else {
