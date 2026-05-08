@@ -67,9 +67,11 @@ function buildQueries(roleType: string, skills: string[]): string[] {
   return [...new Set(queries)];
 }
 
+type RawJob = Omit<JobResult, 'locationMatch' | 'skillScore' | 'alreadyTailored'>;
+
 // ── Source fetchers ──────────────────────────────────────────────────────────
 
-async function fetchRemotive(query: string): Promise<JobResult[]> {
+async function fetchRemotive(query: string): Promise<RawJob[]> {
   const data = await fetch(
     `https://remotive.com/api/remote-jobs?search=${encodeURIComponent(query)}&limit=100`,
     { cache: 'no-store' }
@@ -87,7 +89,7 @@ async function fetchRemotive(query: string): Promise<JobResult[]> {
   }));
 }
 
-async function fetchRemoteOK(query: string): Promise<JobResult[]> {
+async function fetchRemoteOK(query: string): Promise<RawJob[]> {
   const data = await fetch(
     `https://remoteok.com/api?tag=${encodeURIComponent(query.split(' ')[0])}`,
     { cache: 'no-store', headers: { 'User-Agent': 'ResumeOS/1.0' } }
@@ -107,7 +109,7 @@ async function fetchRemoteOK(query: string): Promise<JobResult[]> {
     }));
 }
 
-async function fetchArbeitNow(query: string): Promise<JobResult[]> {
+async function fetchArbeitNow(query: string): Promise<RawJob[]> {
   const data = await fetch(
     `https://www.arbeitnow.com/api/job-board-api?search=${encodeURIComponent(query)}`,
     { cache: 'no-store' }
