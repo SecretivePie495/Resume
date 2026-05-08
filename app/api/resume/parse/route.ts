@@ -1,7 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Polyfill browser globals pdfjs needs in Node.js serverless
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  (globalThis as any).DOMMatrix = class DOMMatrix {
+    a=1; b=0; c=0; d=1; e=0; f=0;
+    m11=1; m12=0; m13=0; m14=0; m21=0; m22=1; m23=0; m24=0;
+    m31=0; m32=0; m33=1; m34=0; m41=0; m42=0; m43=0; m44=1;
+    is2D=true; isIdentity=true;
+    translate() { return this; } scale() { return this; }
+    rotate() { return this; }  multiply() { return this; }
+    inverse() { return this; } transformPoint(p: any) { return p; }
+  };
+}
+if (typeof globalThis.Path2D === 'undefined') {
+  (globalThis as any).Path2D = class Path2D {};
+}
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer), useWorkerFetch: false, useSystemFonts: true }).promise;
+  const parts: string[] = [];
+
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    parts.push(content.items.map((item: any) => ('str' in item ? item.str : '')).join(' '));
+  }
+
+  return parts.join('\n');
+}
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -21,22 +50,7 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      const response = await client.beta.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
-        betas: ['pdfs-2024-09-25'],
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: { type: 'base64', media_type: 'application/pdf', data: buffer.toString('base64') },
-            },
-            { type: 'text', text: 'Extract all text from this resume PDF exactly as it appears. Output only the raw text, no commentary.' },
-          ],
-        }],
-      });
-      text = response.content[0].type === 'text' ? response.content[0].text : '';
+      text = await extractPdfText(buffer);
     } else {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ buffer });
