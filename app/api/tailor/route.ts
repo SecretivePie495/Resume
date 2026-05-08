@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const { company, jobTitle, jd, userResume, url } = await req.json();
 
-    const { allowed } = checkAndUse('resumes');
+    const { allowed } = await checkAndUse('resumes');
     if (!allowed) {
       return NextResponse.json(
         { error: 'Resume limit reached. Add more resumes to continue.', limitReached: true },
@@ -18,23 +18,12 @@ export async function POST(req: NextRequest) {
     const job = await tailorResume(company || undefined, jobTitle || undefined, jd || undefined, userResume || undefined);
     const html = buildHTML(job);
 
-    const result = queries.insert.run(
-      company ?? null,
-      jobTitle ?? null,
-      jd ?? null,
-      JSON.stringify(job),
-      html,
-      null,
-      null,
-      null,
-      url ?? null,
+    const result = await queries.insert(
+      company ?? null, jobTitle ?? null, jd ?? null,
+      JSON.stringify(job), html, null, null, null, url ?? null,
     );
 
-    return NextResponse.json({
-      id: Number(result.lastInsertRowid),
-      job,
-      html,
-    });
+    return NextResponse.json({ id: result.id, job, html });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Failed to tailor resume' }, { status: 500 });

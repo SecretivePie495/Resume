@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUsage, addExtraResumes } from '@/lib/db';
+import { getUsage, addExtraResumes, hasInboxAccess } from '@/lib/db';
 
 export async function GET() {
-  const usage = getUsage();
-  return NextResponse.json(usage);
+  const [usage, inboxAccess] = await Promise.all([getUsage(), hasInboxAccess()]);
+  return NextResponse.json({ ...usage, inboxAccess });
 }
 
 export async function POST(req: NextRequest) {
@@ -12,6 +12,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid resumes count' }, { status: 400 });
   }
   // TODO: verify Stripe payment here before adding credits
-  addExtraResumes(resumes);
+  await addExtraResumes(resumes);
   return NextResponse.json({ ok: true, added: resumes });
 }

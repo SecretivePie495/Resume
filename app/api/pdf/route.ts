@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const app = queries.get.get(Number(id));
+  const app = await queries.get(Number(id));
   if (!app || !app.resume_html) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }

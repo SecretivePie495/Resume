@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   if (!resume?.trim()) return NextResponse.json({ error: 'Resume text required' }, { status: 400 });
 
   try {
-    resumeQueries.upsert.run(resume);
+    await resumeQueries.upsert(resume);
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',

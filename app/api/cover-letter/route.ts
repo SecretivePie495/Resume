@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const app = queries.get.get(Number(id));
+  const app = await queries.get(Number(id));
   if (!app) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { allowed } = checkAndUse('covers');
+  const { allowed } = await checkAndUse('covers');
   if (!allowed) {
     return NextResponse.json(
       { error: 'Cover letter limit reached for this month.', limitReached: true },
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const baseResume = resumeQueries.get.get();
+  const baseResume = await resumeQueries.get();
 
   const coverLetter = await generateCoverLetter(
     app.company ?? '',
@@ -43,6 +43,6 @@ export async function POST(req: NextRequest) {
     baseResume?.content,
   );
 
-  queries.updateCoverLetter.run(coverLetter, id);
+  await queries.updateCoverLetter(coverLetter, id);
   return NextResponse.json({ cover_letter: coverLetter });
 }
