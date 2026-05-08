@@ -95,14 +95,22 @@ function GoldenMailbox() {
   );
 }
 
-const UPGRADE_PLANS: { id: PlanId; highlight?: boolean }[] = [
-  { id: 'starter' },
-  { id: 'pro', highlight: true },
-  { id: 'unlimited' },
-];
+const PLAN_ORDER: PlanId[] = ['free', 'starter', 'pro', 'unlimited'];
 
-function UpgradeModal({ onClose }: { onClose: () => void }) {
-  const [selected, setSelected] = useState<PlanId>('pro');
+const PLAN_META: Record<PlanId, { highlight?: boolean }> = {
+  free:      {},
+  starter:   {},
+  pro:       { highlight: true },
+  unlimited: {},
+};
+
+function UpgradeModal({ currentPlan, onClose }: { currentPlan: PlanId; onClose: () => void }) {
+  const tierIndex   = PLAN_ORDER.indexOf(currentPlan);
+  const upgradeable = PLAN_ORDER.slice(tierIndex + 1) as PlanId[];
+  const defaultPlan = upgradeable.includes('pro') ? 'pro' : upgradeable[0];
+  const [selected, setSelected] = useState<PlanId>(defaultPlan);
+
+  const cols = upgradeable.length === 1 ? 'grid-cols-1 max-w-xs mx-auto' : upgradeable.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -118,13 +126,16 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
         </button>
 
         <div className="text-center mb-5">
-          <h2 className="text-lg font-bold text-slate-900">Choose your plan</h2>
-          <p className="text-sm text-slate-500 mt-1">Upgrade to unlock more resumes, searches, and features</p>
+          <h2 className="text-lg font-bold text-slate-900">Upgrade your plan</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            You're on <span className="font-medium text-slate-700">{PLANS[currentPlan].name}</span>. Choose a plan to unlock more.
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          {UPGRADE_PLANS.map(({ id, highlight }) => {
+        <div className={`grid ${cols} gap-3`}>
+          {upgradeable.map((id) => {
             const plan = PLANS[id];
+            const { highlight } = PLAN_META[id];
             const isSelected = selected === id;
             return (
               <button
@@ -189,16 +200,21 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
 }
 
 function UpgradeButton() {
-  const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<PlanId>('free');
+  const [showModal, setShowModal]     = useState(false);
+  const [loaded, setLoaded]           = useState(false);
 
   useEffect(() => {
     fetch('/api/usage')
-      .then(r => r.json())
-      .then(d => setCurrentPlan(d.plan ?? 'free'));
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        setCurrentPlan((d?.plan as PlanId) ?? 'free');
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
   }, []);
 
-  if (currentPlan === 'unlimited') return null;
+  if (loaded && currentPlan === 'unlimited') return null;
 
   return (
     <>
@@ -211,7 +227,7 @@ function UpgradeButton() {
         </svg>
         Upgrade Plan
       </button>
-      {showModal && <UpgradeModal onClose={() => setShowModal(false)} />}
+      {showModal && <UpgradeModal currentPlan={currentPlan} onClose={() => setShowModal(false)} />}
     </>
   );
 }
