@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['mammoth', 'pdf-parse', 'better-sqlite3'],
+  serverExternalPackages: ['mammoth', 'pdf-parse'],
   turbopack: {
     root: path.resolve(__dirname),
   },

@@ -18,9 +18,8 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      const { PDFParse } = await import('pdf-parse');
-      const parser = new PDFParse({ data: new Uint8Array(buffer) });
-      const result = await parser.getText();
+      const pdfParse = (await import('pdf-parse')).default;
+      const result = await pdfParse(buffer);
       text = result.text;
     } else {
       const mammoth = await import('mammoth');
