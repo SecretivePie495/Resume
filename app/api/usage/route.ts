@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDb } from '@/lib/db';
-import { getAuthUserId } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 export async function GET() {
-  const userId = await getAuthUserId();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { getUsage, hasInboxAccess } = createDb(userId);
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { getUsage, hasInboxAccess } = createDb(user.id, user.email);
   const [usage, inboxAccess] = await Promise.all([getUsage(), hasInboxAccess()]);
   return NextResponse.json({ ...usage, inboxAccess });
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getAuthUserId();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { addExtraResumes } = createDb(userId);
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { addExtraResumes } = createDb(user.id);
 
   const { resumes } = await req.json();
   if (!resumes || typeof resumes !== 'number' || resumes <= 0) {

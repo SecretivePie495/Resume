@@ -36,6 +36,7 @@ export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS user_settings (
       user_id       TEXT PRIMARY KEY,
+      email         TEXT,
       plan          TEXT    NOT NULL DEFAULT 'free',
       resumes_used  INTEGER NOT NULL DEFAULT 0,
       searches_used INTEGER NOT NULL DEFAULT 0,
@@ -44,6 +45,8 @@ export async function initDb() {
       inbox_addon   INTEGER NOT NULL DEFAULT 0,
       reset_at      DATE    NOT NULL DEFAULT ((date_trunc('month', NOW()) + INTERVAL '1 month')::date)
     )`;
+
+  await sql`ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS email TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS base_resume (
@@ -178,7 +181,7 @@ export interface JobEmail {
 
 // ── Per-user DB factory ───────────────────────────────────────────────────────
 
-export function createDb(userId: string) {
+export function createDb(userId: string, userEmail?: string) {
   const uid = userId;
 
   // ── Applications ────────────────────────────────────────────────────────────
@@ -236,7 +239,7 @@ export function createDb(userId: string) {
   }
 
   async function ensureSettings(): Promise<SettingsRow> {
-    await sql`INSERT INTO user_settings (user_id) VALUES (${uid}) ON CONFLICT DO NOTHING`;
+    await sql`INSERT INTO user_settings (user_id, email) VALUES (${uid}, ${userEmail ?? null}) ON CONFLICT (user_id) DO UPDATE SET email = COALESCE(EXCLUDED.email, user_settings.email)`;
     const rows = await sql`
       SELECT plan, resumes_used, searches_used, covers_used, extra_resumes, inbox_addon, reset_at
       FROM user_settings WHERE user_id = ${uid}`;

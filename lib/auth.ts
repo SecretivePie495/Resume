@@ -26,3 +26,11 @@ export async function getAuthUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
   return (session?.user as { id?: string })?.id ?? null;
 }
+
+export async function getAuthUser(): Promise<{ id: string; email?: string } | null> {
+  if (process.env.OWNER_MODE === 'true') return { id: 'owner', email: process.env.OWNER_EMAIL };
+  const session = await getServerSession(authOptions);
+  const id = (session?.user as { id?: string })?.id;
+  if (!id) return null;
+  return { id, email: session?.user?.email ?? undefined };
+}
