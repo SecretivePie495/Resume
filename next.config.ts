@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['mammoth', 'pdf2json'],
+  serverExternalPackages: ['mammoth'],
   turbopack: {
     root: path.resolve(__dirname),
   },

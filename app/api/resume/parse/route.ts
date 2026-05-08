@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
 
-function extractPdfText(buffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    import('pdf2json').then(({ default: PDFParser }) => {
-      const parser = new PDFParser();
-      parser.on('pdfParser_dataError', (err: any) => reject(err?.parserError ?? err));
-      parser.on('pdfParser_dataReady', (data: { Pages: Array<{ Texts: Array<{ R: Array<{ T: string }> }> }> }) => {
-        const text = data.Pages.map(page =>
-          page.Texts.map(t => decodeURIComponent(t.R.map(r => r.T).join(''))).join(' ')
-        ).join('\n');
-        resolve(text);
-      });
-      (parser as any).parseBuffer(buffer);
-    }).catch(reject);
-  });
-}
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -34,7 +21,22 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      text = await extractPdfText(buffer);
+      const response = await client.beta.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4096,
+        betas: ['pdfs-2024-09-25'],
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: buffer.toString('base64') },
+            },
+            { type: 'text', text: 'Extract all text from this resume PDF exactly as it appears. Output only the raw text, no commentary.' },
+          ],
+        }],
+      });
+      text = response.content[0].type === 'text' ? response.content[0].text : '';
     } else {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ buffer });
