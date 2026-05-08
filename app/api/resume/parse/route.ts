@@ -1,35 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Polyfill browser globals pdfjs needs in Node.js serverless
-if (typeof globalThis.DOMMatrix === 'undefined') {
-  (globalThis as any).DOMMatrix = class DOMMatrix {
-    a=1; b=0; c=0; d=1; e=0; f=0;
-    m11=1; m12=0; m13=0; m14=0; m21=0; m22=1; m23=0; m24=0;
-    m31=0; m32=0; m33=1; m34=0; m41=0; m42=0; m43=0; m44=1;
-    is2D=true; isIdentity=true;
-    translate() { return this; } scale() { return this; }
-    rotate() { return this; }  multiply() { return this; }
-    inverse() { return this; } transformPoint(p: any) { return p; }
-  };
-}
-if (typeof globalThis.Path2D === 'undefined') {
-  (globalThis as any).Path2D = class Path2D {};
-}
-
-async function extractPdfText(buffer: Buffer): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-
-  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer), useWorkerFetch: false, useSystemFonts: true }).promise;
-  const parts: string[] = [];
-
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    parts.push(content.items.map((item: any) => ('str' in item ? item.str : '')).join(' '));
-  }
-
-  return parts.join('\n');
+function extractPdfText(buffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    import('pdf2json').then(({ default: PDFParser }) => {
+      const parser = new PDFParser();
+      parser.on('pdfParser_dataError', (err: any) => reject(err?.parserError ?? err));
+      parser.on('pdfParser_dataReady', (data: { Pages: Array<{ Texts: Array<{ R: Array<{ T: string }> }> }> }) => {
+        const text = data.Pages.map(page =>
+          page.Texts.map(t => decodeURIComponent(t.R.map(r => r.T).join(''))).join(' ')
+        ).join('\n');
+        resolve(text);
+      });
+      (parser as any).parseBuffer(buffer);
+    }).catch(reject);
+  });
 }
 
 export async function POST(req: NextRequest) {
