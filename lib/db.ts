@@ -285,6 +285,11 @@ export function createDb(userId: string, userEmail?: string) {
     return { allowed: true, remaining: plan.covers - row.covers_used - 1 };
   }
 
+  async function updatePlan(plan: PlanId) {
+    await sql`INSERT INTO user_settings (user_id) VALUES (${uid}) ON CONFLICT DO NOTHING`;
+    await sql`UPDATE user_settings SET plan = ${plan} WHERE user_id = ${uid}`;
+  }
+
   async function addExtraResumes(count: number) {
     await sql`INSERT INTO user_settings (user_id) VALUES (${uid}) ON CONFLICT DO NOTHING`;
     await sql`UPDATE user_settings SET extra_resumes = extra_resumes + ${count} WHERE user_id = ${uid}`;
@@ -400,6 +405,7 @@ export function createDb(userId: string, userEmail?: string) {
     jobEmailQueries,
     getUsage,
     checkAndUse,
+    updatePlan,
     addExtraResumes,
     hasInboxAccess,
   };

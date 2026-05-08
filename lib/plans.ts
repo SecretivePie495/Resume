@@ -1,5 +1,7 @@
 export type PlanId = 'free' | 'starter' | 'pro' | 'unlimited';
 
+export const PLAN_ORDER: PlanId[] = ['free', 'starter', 'pro', 'unlimited'];
+
 export interface PlanDef {
   name: string;
   price: number;

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import UsageWidget from './UsageWidget';
-import { PLANS, type PlanId } from '@/lib/plans';
+import { PLANS, PLAN_ORDER, type PlanId } from '@/lib/plans';
 
 const NAV = [
   { href: '/generate',  label: 'Resume Builder' },
@@ -95,8 +95,6 @@ function GoldenMailbox() {
   );
 }
 
-const PLAN_ORDER: PlanId[] = ['free', 'starter', 'pro', 'unlimited'];
-
 const PLAN_META: Record<PlanId, { highlight?: boolean }> = {
   free:      {},
   starter:   {},
@@ -109,6 +107,25 @@ function UpgradeModal({ currentPlan, onClose }: { currentPlan: PlanId; onClose: 
   const upgradeable = PLAN_ORDER.slice(tierIndex + 1) as PlanId[];
   const defaultPlan = upgradeable.includes('pro') ? 'pro' : upgradeable[0];
   const [selected, setSelected] = useState<PlanId>(defaultPlan);
+  const [upgrading, setUpgrading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function handleUpgrade() {
+    setUpgrading(true);
+    try {
+      const res = await fetch('/api/usage', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selected }),
+      });
+      if (res.ok) {
+        setDone(true);
+        setTimeout(() => window.location.reload(), 1200);
+      }
+    } finally {
+      setUpgrading(false);
+    }
+  }
 
   const cols = upgradeable.length === 1 ? 'grid-cols-1 max-w-xs mx-auto' : upgradeable.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
 
@@ -190,9 +207,27 @@ function UpgradeModal({ currentPlan, onClose }: { currentPlan: PlanId; onClose: 
           })}
         </div>
 
-        <button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
-          Upgrade to {PLANS[selected].name} — ${PLANS[selected].price}/mo
-        </button>
+        {done ? (
+          <div className="mt-4 flex items-center justify-center gap-2 py-3 text-sm font-semibold text-green-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            Upgraded to {PLANS[selected].name}!
+          </div>
+        ) : (
+          <button
+            onClick={handleUpgrade}
+            disabled={upgrading}
+            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+          >
+            {upgrading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Upgrading...
+              </span>
+            ) : `Upgrade to ${PLANS[selected].name} — $${PLANS[selected].price}/mo`}
+          </button>
+        )}
         <p className="text-center text-[11px] text-slate-400 mt-2">Cancel anytime · No hidden fees</p>
       </div>
     </div>
