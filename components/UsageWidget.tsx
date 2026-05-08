@@ -42,7 +42,16 @@ export default function UsageWidget() {
     if (res.ok) setUsage(await res.json());
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('resumeos:usage-updated', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('resumeos:usage-updated', onFocus);
+    };
+  }, [load]);
 
   async function handleAdd() {
     const pack = EXTRA_PACKS[selected];

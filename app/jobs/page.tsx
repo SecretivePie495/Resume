@@ -53,6 +53,7 @@ function PreviewModal({ preview, onClose, onCoverGenerated }: {
       setApp(updated);
       onCoverGenerated(app.id, data.cover_letter);
       setTab('cover');
+      window.dispatchEvent(new Event('resumeos:usage-updated'));
     } finally {
       setCoverLoading(false);
     }

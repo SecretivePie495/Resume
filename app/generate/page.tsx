@@ -163,6 +163,7 @@ export default function GeneratePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed');
       setJobs(data.jobs);
+      window.dispatchEvent(new Event('resumeos:usage-updated'));
       setTailoredIds(new Set());
       setSearchesLeft(prev => prev !== null && prev !== -1 ? Math.max(0, prev - 1) : prev);
       // Reset filters for new search
@@ -199,6 +200,7 @@ export default function GeneratePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Tailoring failed');
       setTailoredIds(prev => new Set([...prev, job.id]));
+      window.dispatchEvent(new Event('resumeos:usage-updated'));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Tailoring failed');
     } finally {
