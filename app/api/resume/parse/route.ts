@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -18,10 +21,21 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      const { getDocumentProxy, extractText } = await import('unpdf');
-      const pdf = await getDocumentProxy(new Uint8Array(buffer));
-      const { text: extracted } = await extractText(pdf, { mergePages: true });
-      text = extracted;
+      const response = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: buffer.toString('base64') },
+            },
+            { type: 'text', text: 'Extract all text from this resume PDF exactly as it appears. Output only the raw text, no commentary.' },
+          ],
+        }],
+      });
+      text = response.content[0].type === 'text' ? response.content[0].text : '';
     } else {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ buffer });
