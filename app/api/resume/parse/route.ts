@@ -21,9 +21,10 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      const response = await client.messages.create({
+      const response = await client.beta.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4096,
+        betas: ['pdfs-2024-09-25'],
         messages: [{
           role: 'user',
           content: [
