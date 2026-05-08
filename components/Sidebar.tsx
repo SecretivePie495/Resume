@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import UsageWidget from './UsageWidget';
+import { PLANS, type PlanId } from '@/lib/plans';
 
 const NAV = [
   { href: '/generate',  label: 'Resume Builder' },
@@ -94,6 +95,127 @@ function GoldenMailbox() {
   );
 }
 
+const UPGRADE_PLANS: { id: PlanId; highlight?: boolean }[] = [
+  { id: 'starter' },
+  { id: 'pro', highlight: true },
+  { id: 'unlimited' },
+];
+
+function UpgradeModal({ onClose }: { onClose: () => void }) {
+  const [selected, setSelected] = useState<PlanId>('pro');
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-xl w-full mx-4">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="text-center mb-5">
+          <h2 className="text-lg font-bold text-slate-900">Choose your plan</h2>
+          <p className="text-sm text-slate-500 mt-1">Upgrade to unlock more resumes, searches, and features</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {UPGRADE_PLANS.map(({ id, highlight }) => {
+            const plan = PLANS[id];
+            const isSelected = selected === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setSelected(id)}
+                className={`relative flex flex-col items-start p-4 rounded-xl border-2 text-left transition-all ${
+                  isSelected
+                    ? highlight
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-800 bg-slate-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                {highlight && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                    POPULAR
+                  </span>
+                )}
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full mb-3 ${
+                  id === 'unlimited' ? 'bg-violet-100 text-violet-700' :
+                  id === 'pro'       ? 'bg-blue-100 text-blue-700' :
+                                       'bg-green-100 text-green-700'
+                }`}>
+                  {plan.name}
+                </span>
+                <div className="mb-3">
+                  <span className="text-2xl font-bold text-slate-900">${plan.price}</span>
+                  <span className="text-xs text-slate-400">/mo</span>
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-slate-600 w-full">
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-emerald-500">✓</span>
+                    {plan.resumes} resumes/mo
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-emerald-500">✓</span>
+                    {plan.searches === -1 ? 'Unlimited' : plan.searches} job searches
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <span className="text-emerald-500">✓</span>
+                    {plan.covers} cover letters
+                  </li>
+                  {plan.inbox && (
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-amber-500">✓</span>
+                      Golden Mailbox
+                    </li>
+                  )}
+                </ul>
+              </button>
+            );
+          })}
+        </div>
+
+        <button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
+          Upgrade to {PLANS[selected].name} — ${PLANS[selected].price}/mo
+        </button>
+        <p className="text-center text-[11px] text-slate-400 mt-2">Cancel anytime · No hidden fees</p>
+      </div>
+    </div>
+  );
+}
+
+function UpgradeButton() {
+  const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/usage')
+      .then(r => r.json())
+      .then(d => setCurrentPlan(d.plan ?? 'free'));
+  }, []);
+
+  if (currentPlan === 'unlimited') return null;
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        Upgrade Plan
+      </button>
+      {showModal && <UpgradeModal onClose={() => setShowModal(false)} />}
+    </>
+  );
+}
+
 function UserFooter() {
   const { data: session } = useSession();
   if (!session?.user) return null;
@@ -162,6 +284,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-2 py-4 border-t border-slate-200 space-y-3">
+        <UpgradeButton />
         <GoldenMailbox />
         <UsageWidget />
         <Link
