@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCoverLetter } from '@/lib/claude';
-import { queries, resumeQueries, checkAndUse } from '@/lib/db';
+import { createDb } from '@/lib/db';
+import { getAuthUserId } from '@/lib/auth';
 import { TailoredJob } from '@/lib/resume';
 
 function resumeToText(json: string): string {
@@ -19,6 +20,10 @@ function resumeToText(json: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { queries, resumeQueries, checkAndUse } = createDb(userId);
+
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
@@ -34,7 +39,6 @@ export async function POST(req: NextRequest) {
   }
 
   const baseResume = await resumeQueries.get();
-
   const coverLetter = await generateCoverLetter(
     app.company ?? '',
     app.job_title ?? '',

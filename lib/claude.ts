@@ -107,6 +107,32 @@ export async function tailorResume(company?: string, jobTitle?: string, jd?: str
   return JSON.parse(raw) as TailoredJob;
 }
 
+export async function answerInterviewQuestion(
+  question: string,
+  resumeText: string,
+  jobTitle?: string,
+  company?: string,
+): Promise<string> {
+  const jobContext = jobTitle || company
+    ? `The candidate is applying for: ${jobTitle ?? ''}${company ? ` at ${company}` : ''}.`
+    : '';
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 600,
+    system: [{ type: 'text', text: `You are an expert interview coach. Given a candidate's resume and an interview question, write a confident, first-person answer the candidate can say out loud. Ground every claim in their actual experience. Be specific, concise, and compelling. Use STAR format (Situation, Task, Action, Result) when appropriate. 2–4 paragraphs max. Plain text only — no bullet points, no markdown, no headers.`, cache_control: { type: 'ephemeral' } }],
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: `RESUME:\n${resumeText.slice(0, 4000)}`, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: `${jobContext}\n\nINTERVIEW QUESTION:\n${question}` },
+      ],
+    }],
+  });
+
+  return (response.content[0] as { text: string }).text.trim();
+}
+
 export async function generateCoverLetter(
   company: string,
   jobTitle: string,

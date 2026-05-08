@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getOAuthClient, extractBody, classifyEmail, matchApplication } from '@/lib/gmail';
-import { gmailTokenQueries, jobEmailQueries, queries as appQueries, hasInboxAccess } from '@/lib/db';
+import { createDb } from '@/lib/db';
+import { getAuthUserId } from '@/lib/auth';
 
 function domainsFromApps(apps: { url: string | null; company: string | null }[]): string[] {
   const domains = new Set<string>();
-
   for (const app of apps) {
     if (app.url) {
       try {
@@ -17,17 +17,19 @@ function domainsFromApps(apps: { url: string | null; company: string | null }[])
         }
       } catch { /* invalid URL */ }
     }
-
     if (app.company && domains.size === 0) {
       const slug = app.company.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (slug.length > 2) domains.add(`${slug}.com`);
     }
   }
-
   return [...domains];
 }
 
 export async function GET() {
+  const userId = await getAuthUserId();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { gmailTokenQueries, jobEmailQueries, queries: appQueries, hasInboxAccess } = createDb(userId);
+
   if (!(await hasInboxAccess())) return NextResponse.json({ error: 'Golden Mailbox requires an upgrade' }, { status: 403 });
   const token = await gmailTokenQueries.get();
 
@@ -67,7 +69,6 @@ export async function GET() {
 
     for (const msg of messages) {
       if (!msg.id) continue;
-
       const detail = await gmail.users.messages.get({ userId: 'me', id: msg.id, format: 'full' });
       const headers = detail.data.payload?.headers ?? [];
       const subject = headers.find(h => h.name === 'Subject')?.value ?? '(no subject)';
@@ -85,15 +86,11 @@ export async function GET() {
       const applicationId = matchApplication(fromEmail, subject, apps);
 
       try {
-        await jobEmailQueries.upsert(
-          msg.id, fromEmail, fromName, subject, snippet,
-          body.slice(0, 5000), receivedAt, applicationId, label,
-        );
+        await jobEmailQueries.upsert(msg.id, fromEmail, fromName, subject, snippet, body.slice(0, 5000), receivedAt, applicationId, label);
       } catch { /* skip duplicates */ }
     }
 
-    const emails = await jobEmailQueries.list();
-    return NextResponse.json({ emails, domains });
+    return NextResponse.json({ emails: await jobEmailQueries.list(), domains });
   } catch (err) {
     console.error('Gmail fetch error:', err);
     if (process.env.OWNER_MODE === 'true') {
@@ -104,6 +101,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  const userId = await getAuthUserId();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { jobEmailQueries } = createDb(userId);
   const { gmail_id } = await req.json();
   if (gmail_id) await jobEmailQueries.markRead(gmail_id);
   return NextResponse.json({ ok: true });

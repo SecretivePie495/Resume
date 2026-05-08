@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkAndUse, queries as appQueries, pulledJobQueries } from '@/lib/db';
+import { createDb } from '@/lib/db';
+import { getAuthUserId } from '@/lib/auth';
 
 export interface JobResult {
   id: string;
@@ -140,6 +141,10 @@ export async function POST(req: NextRequest) {
     if (!roleType?.trim() && !skills?.length) {
       return NextResponse.json({ error: 'Role type or skills required' }, { status: 400 });
     }
+
+    const userId = await getAuthUserId();
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { checkAndUse, queries: appQueries, pulledJobQueries } = createDb(userId);
 
     const { allowed } = await checkAndUse('searches');
     if (!allowed) {

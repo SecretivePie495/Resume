@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import ResumePicker from '@/components/ResumePicker';
 
 interface JobResult {
   id: string;
@@ -14,6 +15,7 @@ interface JobResult {
   postedAt?: string;
   locationMatch: boolean;
   skillScore: number;
+  alreadyTailored: boolean;
 }
 
 type Step = 'resume' | 'skills' | 'jobs';
@@ -55,14 +57,31 @@ export default function GeneratePage() {
   const [tailoredIds, setTailoredIds]       = useState<Set<string>>(new Set());
   const [tailoringAll, setTailoringAll]     = useState(false);
   const [tailorAllProgress, setTailorAllProgress] = useState<{ done: number; total: number } | null>(null);
+  const [showTailored, setShowTailored]     = useState(false);
+  const [jobLimit, setJobLimit]             = useState<number>(25);
+  const [customLimit, setCustomLimit]       = useState('');
+  const [searchesLeft, setSearchesLeft]     = useState<number | null>(null);
   const [error, setError]                   = useState('');
   const fileInputRef    = useRef<HTMLInputElement>(null);
   const cancelTailorAll = useRef(false);
+
+  useEffect(() => {
+    fetch('/api/usage')
+      .then(r => r.json())
+      .then(d => {
+        if (d.plan_def?.searches === -1) { setSearchesLeft(-1); return; }
+        const used = d.searches_used ?? 0;
+        const max  = (d.plan_def?.searches ?? 0) + (d.extra_resumes ?? 0);
+        setSearchesLeft(Math.max(0, max - used));
+      })
+      .catch(() => {});
+  }, []);
 
   // Result filters (all client-side)
   const [filterKeyword, setFilterKeyword]             = useState('');
   const [filterDays, setFilterDays]                   = useState<number | null>(null);
   const [filterLocationMatch, setFilterLocationMatch] = useState(false);
+  const [filterRemote, setFilterRemote]               = useState(false);
   const [filterHasSalary, setFilterHasSalary]         = useState(false);
   const [filterCountry, setFilterCountry]             = useState('');
   const [filterState, setFilterState]                 = useState('');
@@ -138,12 +157,14 @@ export default function GeneratePage() {
           skills: Array.from(selectedSkills),
           roleType: selectedRole,
           country,
+          limit: jobLimit,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed');
       setJobs(data.jobs);
       setTailoredIds(new Set());
+      setSearchesLeft(prev => prev !== null && prev !== -1 ? Math.max(0, prev - 1) : prev);
       // Reset filters for new search
       setFilterKeyword('');
       setFilterDays(null);
@@ -188,7 +209,12 @@ export default function GeneratePage() {
   const filteredJobs = useMemo(() => {
     const now = Date.now();
     return jobs.filter(job => {
+      if (!showTailored && job.alreadyTailored) return false;
       if (filterLocationMatch && !job.locationMatch) return false;
+      if (filterRemote) {
+        const loc = job.location.toLowerCase();
+        if (!['remote', 'worldwide', 'anywhere', 'global'].some(w => loc.includes(w))) return false;
+      }
       if (filterHasSalary && !job.salary) return false;
       if (filterMinSkill > 0 && (job.skillScore ?? 0) < filterMinSkill) return false;
       if (filterDays !== null && job.postedAt) {
@@ -211,7 +237,7 @@ export default function GeneratePage() {
       }
       return true;
     });
-  }, [jobs, filterLocationMatch, filterHasSalary, filterMinSkill, filterDays, filterKeyword, filterCountry, filterState]);
+  }, [jobs, showTailored, filterLocationMatch, filterRemote, filterHasSalary, filterMinSkill, filterDays, filterKeyword, filterCountry, filterState]);
 
   const STEPS: Step[]                    = ['resume', 'skills', 'jobs'];
   const STEP_LABELS: Record<Step, string> = { resume: 'Resume', skills: 'Profile', jobs: 'Jobs' };
@@ -227,6 +253,33 @@ export default function GeneratePage() {
           {step === 'jobs'   && 'Most recent matching jobs — tailor your resume in one click'}
         </p>
       </div>
+
+      {/* Search countdown — only show on resume step */}
+      {step === 'resume' && searchesLeft !== null && (
+        <div className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm ${
+          searchesLeft === -1  ? 'bg-green-50 border-green-200 text-green-700' :
+          searchesLeft === 0   ? 'bg-red-50 border-red-200 text-red-700' :
+          searchesLeft <= 3    ? 'bg-amber-50 border-amber-200 text-amber-700' :
+          'bg-blue-50 border-blue-200 text-blue-700'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{searchesLeft === -1 ? '∞' : searchesLeft === 0 ? '🚫' : searchesLeft <= 3 ? '⚠️' : '🔍'}</span>
+            <span className="font-medium">
+              {searchesLeft === -1 && 'Unlimited job searches this month'}
+              {searchesLeft === 0  && 'No job searches left this month'}
+              {searchesLeft > 0    && `${searchesLeft} job search${searchesLeft === 1 ? '' : 'es'} remaining this month`}
+            </span>
+          </div>
+          {searchesLeft !== -1 && (
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(searchesLeft, 10) }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-full bg-current opacity-70" />
+              ))}
+              {searchesLeft > 10 && <span className="text-xs opacity-70">+{searchesLeft - 10}</span>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-xs">
@@ -255,8 +308,14 @@ export default function GeneratePage() {
 
       {/* ── Step 1: Resume ── */}
       {step === 'resume' && (
+        <div className="space-y-4">
+        <ResumePicker
+          currentResume={resume}
+          currentFileName={fileName}
+          onSelect={(content, name) => { setResume(content); setFileName(name); }}
+        />
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-          <h2 className="text-base font-semibold text-slate-900">Your Resume</h2>
+          <h2 className="text-base font-semibold text-slate-900">Or upload a new resume</h2>
 
           <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFile} className="hidden" id="resume-upload" />
           <label
@@ -319,6 +378,7 @@ export default function GeneratePage() {
               </span>
             ) : 'Build My Profile →'}
           </button>
+        </div>
         </div>
       )}
 
@@ -427,6 +487,46 @@ export default function GeneratePage() {
             <p className="text-[11px] text-slate-400">{selectedSkills.size} of {skills.length} selected</p>
           </div>
 
+          {/* Job count picker */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+            <label className="block text-sm font-semibold text-slate-800">
+              How many jobs do you want?
+            </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              {[10, 25, 50].map(n => (
+                <button
+                  key={n}
+                  onClick={() => { setJobLimit(n); setCustomLimit(''); }}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+                    jobLimit === n && !customLimit
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <div className="flex items-center gap-2 flex-1 min-w-[140px]">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={customLimit}
+                  onChange={e => {
+                    const v = Math.min(100, Math.max(1, Number(e.target.value)));
+                    setCustomLimit(e.target.value);
+                    setJobLimit(v);
+                  }}
+                  placeholder="Custom (1–100)"
+                  className={`w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    customLimit ? 'border-blue-400' : 'border-slate-200'
+                  }`}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-400">More jobs = longer search time. 25 is a good starting point.</p>
+          </div>
+
           <button
             onClick={handleFindJobs}
             disabled={searching}
@@ -435,9 +535,9 @@ export default function GeneratePage() {
             {searching ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Finding jobs...
+                Finding up to {jobLimit} jobs...
               </span>
-            ) : 'Find Jobs →'}
+            ) : `Find ${jobLimit} Jobs →`}
           </button>
         </div>
       )}
@@ -460,6 +560,16 @@ export default function GeneratePage() {
                   View Resumes ({tailoredIds.size}) →
                 </Link>
               )}
+              <button
+                onClick={() => setShowTailored(v => !v)}
+                className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+                  showTailored
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                {showTailored ? 'Hiding done' : 'Show done'}
+              </button>
               <button onClick={() => setStep('skills')} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
                 ← Edit Profile
               </button>
@@ -478,19 +588,27 @@ export default function GeneratePage() {
                 className="flex-1 min-w-[180px] bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
 
-              {/* Date posted */}
-              <div className="flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-                {([null, 7, 14, 30] as (number | null)[]).map(d => (
-                  <button
-                    key={d ?? 'all'}
-                    onClick={() => setFilterDays(d)}
-                    className={`px-2.5 py-1.5 font-medium transition-colors ${
-                      filterDays === d ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'
-                    }`}
-                  >
-                    {d === null ? 'All' : `${d}d`}
-                  </button>
-                ))}
+              {/* Date posted slider */}
+              <div className="flex items-center gap-3 flex-1 min-w-[220px]">
+                <span className="text-xs text-slate-400 shrink-0">Posted:</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={90}
+                  value={filterDays ?? 90}
+                  onChange={e => setFilterDays(Number(e.target.value))}
+                  className="flex-1 accent-blue-600 cursor-pointer"
+                />
+                <button
+                  onClick={() => setFilterDays(null)}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-lg border shrink-0 transition-colors ${
+                    filterDays === null
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {filterDays === null ? 'All' : `≤ ${filterDays}d`}
+                </button>
               </div>
 
               {/* Location match toggle */}
@@ -503,6 +621,18 @@ export default function GeneratePage() {
                 }`}
               >
                 Location match
+              </button>
+
+              {/* Remote toggle */}
+              <button
+                onClick={() => setFilterRemote(v => !v)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  filterRemote
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                Remote
               </button>
 
               {/* Has salary toggle */}
@@ -554,12 +684,13 @@ export default function GeneratePage() {
               </div>
 
               {/* Clear filters */}
-              {(filterKeyword || filterDays !== null || filterLocationMatch || filterHasSalary || filterCountry || filterState || filterMinSkill > 0) && (
+              {(filterKeyword || filterDays !== null || filterLocationMatch || filterRemote || filterHasSalary || filterCountry || filterState || filterMinSkill > 0) && (
                 <button
                   onClick={() => {
                     setFilterKeyword('');
                     setFilterDays(null);
                     setFilterLocationMatch(false);
+                    setFilterRemote(false);
                     setFilterHasSalary(false);
                     setFilterCountry('');
                     setFilterState('');

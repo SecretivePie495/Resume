@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOAuthClient } from '@/lib/gmail';
-import { gmailTokenQueries } from '@/lib/db';
+import { createDb } from '@/lib/db';
+import { getAuthUserId } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
   if (!code) return NextResponse.redirect(new URL('/jobs?gmail=error', req.url));
+
+  const userId = await getAuthUserId();
+  if (!userId) return NextResponse.redirect(new URL('/signin', req.url));
+  const { gmailTokenQueries } = createDb(userId);
 
   try {
     const client = getOAuthClient();

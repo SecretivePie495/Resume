@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { resumeQueries } from '@/lib/db';
+import { createDb } from '@/lib/db';
+import { getAuthUserId } from '@/lib/auth';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   const { resume } = await req.json();
   if (!resume?.trim()) return NextResponse.json({ error: 'Resume text required' }, { status: 400 });
+
+  const userId = await getAuthUserId();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { resumeQueries } = createDb(userId);
 
   try {
     await resumeQueries.upsert(resume);
