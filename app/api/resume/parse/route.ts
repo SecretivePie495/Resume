@@ -18,9 +18,10 @@ export async function POST(req: NextRequest) {
     let text = '';
 
     if (ext === 'pdf') {
-      const pdfParse = (await import('pdf-parse')).default;
-      const result = await pdfParse(buffer);
-      text = result.text;
+      const { getDocumentProxy, extractText } = await import('unpdf');
+      const pdf = await getDocumentProxy(new Uint8Array(buffer));
+      const { text: extracted } = await extractText(pdf, { mergePages: true });
+      text = extracted;
     } else {
       const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ buffer });
