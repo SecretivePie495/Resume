@@ -127,6 +127,125 @@ async function fetchArbeitNow(query: string): Promise<RawJob[]> {
   }));
 }
 
+async function fetchTheMuse(query: string): Promise<RawJob[]> {
+  const data = await fetch(
+    `https://www.themuse.com/api/public/jobs?page=0&descending=true&category=${encodeURIComponent(query)}`,
+    { cache: 'no-store' }
+  ).then(r => r.json()).catch(() => ({ results: [] }));
+
+  return (data.results ?? []).map((j: Record<string, unknown>) => {
+    const loc = (j.locations as { name: string }[] | undefined)?.[0]?.name ?? 'Remote';
+    const company = (j.company as { name: string } | undefined)?.name ?? '';
+    const refs = (j.refs as { landing_page?: string } | undefined);
+    return {
+      id:          `muse-${j.id}`,
+      title:       j.name as string,
+      company,
+      location:    loc,
+      url:         refs?.landing_page ?? `https://www.themuse.com/jobs/${j.id}`,
+      description: stripHtml((j.contents as string) ?? '').slice(0, 600),
+      salary:      '',
+      postedAt:    j.publication_date as string | undefined,
+    };
+  });
+}
+
+async function fetchJobicy(query: string): Promise<RawJob[]> {
+  const tag = query.split(' ')[0];
+  const data = await fetch(
+    `https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(tag)}`,
+    { cache: 'no-store' }
+  ).then(r => r.json()).catch(() => ({ jobs: [] }));
+
+  return (data.jobs ?? []).map((j: Record<string, string>) => ({
+    id:          `jobicy-${j.id}`,
+    title:       j.jobTitle,
+    company:     j.companyName,
+    location:    j.jobGeo || 'Remote',
+    url:         j.url,
+    description: stripHtml(j.jobExcerpt ?? '').slice(0, 600),
+    salary:      j.annualSalaryMin ? `$${j.annualSalaryMin}–$${j.annualSalaryMax}` : '',
+    postedAt:    j.pubDate,
+  }));
+}
+
+async function fetchAiJobsNet(query: string): Promise<RawJob[]> {
+  const rss = await fetch(
+    `https://ai-jobs.net/feed/?s=${encodeURIComponent(query)}`,
+    { cache: 'no-store' }
+  ).then(r => r.text()).catch(() => '');
+
+  const items = [...rss.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+  return items.map((m, i) => {
+    const get = (tag: string) => m[1].match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`))?.[1]?.trim()
+      ?? m[1].match(new RegExp(`<${tag}[^>]*>([^<]*)<\\/${tag}>`))?.[1]?.trim() ?? '';
+    return {
+      id:          `aijobs-${i}-${Date.now()}`,
+      title:       get('title'),
+      company:     get('author') || get('dc:creator') || 'Unknown',
+      location:    get('location') || 'Remote',
+      url:         get('link'),
+      description: stripHtml(get('description')).slice(0, 600),
+      salary:      '',
+      postedAt:    get('pubDate') ? new Date(get('pubDate')).toISOString() : undefined,
+    };
+  }).filter(j => j.title && j.url);
+}
+
+async function fetchHimalayas(query: string): Promise<RawJob[]> {
+  const data = await fetch(
+    `https://himalayas.app/api/jobs?q=${encodeURIComponent(query)}&limit=50`,
+    { cache: 'no-store' }
+  ).then(r => r.json()).catch(() => ({ jobs: [] }));
+
+  return (data.jobs ?? []).map((j: Record<string, string>) => ({
+    id:          `himalayas-${j.slug ?? j.id}`,
+    title:       j.title,
+    company:     j.companyName ?? j.company,
+    location:    j.locationRestrictions ?? j.location ?? 'Remote',
+    url:         j.applicationLink ?? `https://himalayas.app/jobs/${j.slug}`,
+    description: stripHtml(j.description ?? '').slice(0, 600),
+    salary:      j.salaryCurrency && j.salaryMin ? `${j.salaryCurrency}${j.salaryMin}–${j.salaryMax}` : '',
+    postedAt:    j.createdAt,
+  }));
+}
+
+async function fetchWeWorkRemotely(query: string): Promise<RawJob[]> {
+  const rss = await fetch(
+    `https://weworkremotely.com/remote-jobs/search.json?term=${encodeURIComponent(query)}`,
+    { cache: 'no-store', headers: { 'User-Agent': 'ResumeOS/1.0' } }
+  ).then(r => r.json()).catch(() => []);
+
+  return (Array.isArray(rss) ? rss : []).map((j: Record<string, string>) => ({
+    id:          `wwr-${j.id}`,
+    title:       j.title,
+    company:     j.company,
+    location:    j.region || 'Remote',
+    url:         j.url?.startsWith('http') ? j.url : `https://weworkremotely.com${j.url}`,
+    description: stripHtml(j.description ?? '').slice(0, 600),
+    salary:      '',
+    postedAt:    j.date,
+  }));
+}
+
+async function fetchWorkingNomads(query: string): Promise<RawJob[]> {
+  const data = await fetch(
+    `https://www.workingnomads.com/api/exposed_jobs/?search=${encodeURIComponent(query)}`,
+    { cache: 'no-store' }
+  ).then(r => r.json()).catch(() => []);
+
+  return (Array.isArray(data) ? data : []).map((j: Record<string, string>) => ({
+    id:          `nomads-${j.id}`,
+    title:       j.title,
+    company:     j.company_name,
+    location:    j.location || 'Remote',
+    url:         j.url,
+    description: stripHtml(j.description ?? '').slice(0, 600),
+    salary:      '',
+    postedAt:    j.pub_date,
+  }));
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -166,13 +285,27 @@ export async function POST(req: NextRequest) {
     const kwds = roleKeywords(roleType ?? '');
 
     // Fan out across all sources in parallel
-    const [remotiveResults, remoteOKResults, arbeitResults] = await Promise.all([
+    const [
+      remotiveResults, remoteOKResults, arbeitResults, museResults, jobicyResults,
+      aiJobsResults, himalayasResults, wwrResults, nomadsResults,
+    ] = await Promise.all([
       Promise.all(searchQueries.map(q => fetchRemotive(q))).then(r => r.flat()),
       Promise.all(searchQueries.slice(0, 3).map(q => fetchRemoteOK(q))).then(r => r.flat()),
       Promise.all(searchQueries.slice(0, 3).map(q => fetchArbeitNow(q))).then(r => r.flat()),
+      Promise.all(searchQueries.slice(0, 2).map(q => fetchTheMuse(q))).then(r => r.flat()),
+      Promise.all(searchQueries.slice(0, 2).map(q => fetchJobicy(q))).then(r => r.flat()),
+      Promise.all(searchQueries.slice(0, 2).map(q => fetchAiJobsNet(q))).then(r => r.flat()),
+      Promise.all(searchQueries.slice(0, 2).map(q => fetchHimalayas(q))).then(r => r.flat()),
+      Promise.all(searchQueries.slice(0, 2).map(q => fetchWeWorkRemotely(q))).then(r => r.flat()),
+      Promise.all(searchQueries.slice(0, 2).map(q => fetchWorkingNomads(q))).then(r => r.flat()),
     ]);
 
-    const allJobs = [...remotiveResults, ...remoteOKResults, ...arbeitResults];
+    const allJobs = [
+      ...remotiveResults, ...remoteOKResults, ...arbeitResults, ...museResults, ...jobicyResults,
+      ...aiJobsResults, ...himalayasResults, ...wwrResults, ...nomadsResults,
+    ];
+
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
     // Merge + deduplicate by ID and URL
     const seenIds  = new Set<string>();
@@ -181,6 +314,7 @@ export async function POST(req: NextRequest) {
 
     for (const j of allJobs) {
       if (seenIds.has(j.id) || seenUrls.has(j.url)) continue;
+      if (j.postedAt && new Date(j.postedAt).getTime() < cutoff) continue;
       seenIds.add(j.id);
       seenUrls.add(j.url);
 

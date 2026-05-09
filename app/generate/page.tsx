@@ -49,6 +49,7 @@ export default function GeneratePage() {
   const [suggestedRoles, setSuggestedRoles] = useState<string[]>([]);
   const [selectedRole, setSelectedRole]     = useState('');
   const [country, setCountry]               = useState('');
+  const [state, setState]                   = useState('');
   const [salaryMin, setSalaryMin]           = useState<number>(0);
   const [salaryMax, setSalaryMax]           = useState<number>(0);
 
@@ -123,7 +124,7 @@ export default function GeneratePage() {
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
 
       setSkills(data.skills ?? []);
-      setSelectedSkills(new Set(data.skills ?? []));
+      setSelectedSkills(new Set());
       setSuggestedRoles(data.roleTypes ?? []);
       setSelectedRole(data.roleTypes?.[0] ?? '');
       setCountry(data.country ?? 'United States');
@@ -157,6 +158,7 @@ export default function GeneratePage() {
           skills: Array.from(selectedSkills),
           roleType: selectedRole,
           country,
+          state,
           limit: jobLimit,
         }),
       });
@@ -435,6 +437,17 @@ export default function GeneratePage() {
                 placeholder="e.g. United States"
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <label className="block text-sm font-semibold text-slate-800 pt-1">State</label>
+              <select
+                value={state}
+                onChange={e => setState(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Any state</option>
+                {['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
               <p className="text-[11px] text-slate-400">Filters jobs that accept applicants from your country</p>
             </div>
 
