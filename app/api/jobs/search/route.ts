@@ -14,6 +14,8 @@ export interface JobResult {
   locationMatch: boolean;
   skillScore: number;
   alreadyTailored: boolean;
+  source: string;
+  matchedSkills: string[];
 }
 
 function stripHtml(html: string): string {
@@ -67,7 +69,7 @@ function buildQueries(roleType: string, skills: string[]): string[] {
   return [...new Set(queries)];
 }
 
-type RawJob = Omit<JobResult, 'locationMatch' | 'skillScore' | 'alreadyTailored'>;
+type RawJob = Omit<JobResult, 'locationMatch' | 'skillScore' | 'alreadyTailored' | 'matchedSkills'>;
 
 // ── Source fetchers ──────────────────────────────────────────────────────────
 
@@ -86,6 +88,7 @@ async function fetchRemotive(query: string): Promise<RawJob[]> {
     description: stripHtml(j.description ?? '').slice(0, 600),
     salary:   j.salary || '',
     postedAt: j.publication_date,
+    source:   'Remotive',
   }));
 }
 
@@ -106,6 +109,7 @@ async function fetchRemoteOK(query: string): Promise<RawJob[]> {
       description: stripHtml(j.description ?? '').slice(0, 600),
       salary:   j.salary || '',
       postedAt: j.date,
+      source:   'RemoteOK',
     }));
 }
 
@@ -124,6 +128,7 @@ async function fetchArbeitNow(query: string): Promise<RawJob[]> {
     description: stripHtml(j.description ?? '').slice(0, 600),
     salary:   '',
     postedAt: j.created_at,
+    source:   'ArbeitNow',
   }));
 }
 
@@ -146,6 +151,7 @@ async function fetchTheMuse(query: string): Promise<RawJob[]> {
       description: stripHtml((j.contents as string) ?? '').slice(0, 600),
       salary:      '',
       postedAt:    j.publication_date as string | undefined,
+      source:      'The Muse',
     };
   });
 }
@@ -166,6 +172,7 @@ async function fetchJobicy(query: string): Promise<RawJob[]> {
     description: stripHtml(j.jobExcerpt ?? '').slice(0, 600),
     salary:      j.annualSalaryMin ? `$${j.annualSalaryMin}–$${j.annualSalaryMax}` : '',
     postedAt:    j.pubDate,
+    source:      'Jobicy',
   }));
 }
 
@@ -188,6 +195,7 @@ async function fetchAiJobsNet(query: string): Promise<RawJob[]> {
       description: stripHtml(get('description')).slice(0, 600),
       salary:      '',
       postedAt:    get('pubDate') ? new Date(get('pubDate')).toISOString() : undefined,
+      source:      'ai-jobs.net',
     };
   }).filter(j => j.title && j.url);
 }
@@ -207,6 +215,7 @@ async function fetchHimalayas(query: string): Promise<RawJob[]> {
     description: stripHtml(j.description ?? '').slice(0, 600),
     salary:      j.salaryCurrency && j.salaryMin ? `${j.salaryCurrency}${j.salaryMin}–${j.salaryMax}` : '',
     postedAt:    j.createdAt,
+    source:      'Himalayas',
   }));
 }
 
@@ -225,6 +234,7 @@ async function fetchWeWorkRemotely(query: string): Promise<RawJob[]> {
     description: stripHtml(j.description ?? '').slice(0, 600),
     salary:      '',
     postedAt:    j.date,
+    source:      'We Work Remotely',
   }));
 }
 
@@ -243,6 +253,7 @@ async function fetchWorkingNomads(query: string): Promise<RawJob[]> {
     description: stripHtml(j.description ?? '').slice(0, 600),
     salary:      '',
     postedAt:    j.pub_date,
+    source:      'Working Nomads',
   }));
 }
 
@@ -318,16 +329,18 @@ export async function POST(req: NextRequest) {
       seenIds.add(j.id);
       seenUrls.add(j.url);
 
-      const skillScore    = scoreJobBySkills(j.title, j.description, skills ?? []);
-      const descScore     = (skills ?? []).reduce((n, s) => n + (j.description.toLowerCase().includes(s.toLowerCase()) ? 1 : 0), 0);
+      const haystack      = `${j.title} ${j.description}`.toLowerCase();
+      const matchedSkills = (skills ?? []).filter(s => haystack.includes(s.toLowerCase()));
+      const skillScore    = matchedSkills.length;
       const titleHitsRole = kwds.some(kw => j.title.toLowerCase().includes(kw));
 
-      if (!titleHitsRole && skillScore === 0 && descScore === 0) continue;
+      if (!titleHitsRole && skillScore === 0) continue;
 
       raw.push({
         ...j,
         locationMatch:   matchesCountry(j.location, userCountry),
         skillScore,
+        matchedSkills,
         alreadyTailored: tailoredUrls.has(j.url),
       });
     }

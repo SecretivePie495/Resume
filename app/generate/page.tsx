@@ -16,6 +16,8 @@ interface JobResult {
   locationMatch: boolean;
   skillScore: number;
   alreadyTailored: boolean;
+  source: string;
+  matchedSkills: string[];
 }
 
 type Step = 'resume' | 'skills' | 'jobs';
@@ -59,6 +61,7 @@ export default function GeneratePage() {
   const [tailoringAll, setTailoringAll]     = useState(false);
   const [tailorAllProgress, setTailorAllProgress] = useState<{ done: number; total: number } | null>(null);
   const [showTailored, setShowTailored]     = useState(false);
+  const [showDebug, setShowDebug]           = useState(false);
   const [jobLimit, setJobLimit]             = useState<number>(25);
   const [customLimit, setCustomLimit]       = useState('');
   const [searchesLeft, setSearchesLeft]     = useState<number | null>(null);
@@ -585,6 +588,16 @@ export default function GeneratePage() {
               >
                 {showTailored ? 'Hiding done' : 'Show done'}
               </button>
+              <button
+                onClick={() => setShowDebug(v => !v)}
+                className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+                  showDebug
+                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                {showDebug ? 'Hide why' : 'Why these?'}
+              </button>
               <button onClick={() => setStep('skills')} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
                 ← Edit Profile
               </button>
@@ -770,6 +783,25 @@ export default function GeneratePage() {
                   </div>
 
                   <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{job.description}</p>
+
+                  {showDebug && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                        {job.source}
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                        Score: {job.skillScore}
+                      </span>
+                      {job.matchedSkills.map(s => (
+                        <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                          ✓ {s}
+                        </span>
+                      ))}
+                      {job.matchedSkills.length === 0 && (
+                        <span className="text-[10px] text-slate-400 italic">matched on role title only</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col items-end gap-2 shrink-0">
