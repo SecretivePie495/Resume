@@ -73,7 +73,7 @@ type RawJob = Omit<JobResult, 'locationMatch' | 'skillScore' | 'alreadyTailored'
 
 // ── Source fetchers ──────────────────────────────────────────────────────────
 
-async function fetchLinkedIn(query: string, country: string): Promise<RawJob[]> {
+async function fetchLinkedIn(query: string, country: string, count: number): Promise<RawJob[]> {
   const token = process.env.APIFY_API_TOKEN;
   if (!token) return [];
 
@@ -87,7 +87,7 @@ async function fetchLinkedIn(query: string, country: string): Promise<RawJob[]> 
       body: JSON.stringify({
         urls: [searchUrl],
         scrapeCompany: true,
-        count: 25,
+        count: Math.max(10, count),
         splitByLocation: false,
       }),
       cache: 'no-store',
@@ -99,8 +99,8 @@ async function fetchLinkedIn(query: string, country: string): Promise<RawJob[]> 
     title:       j.title,
     company:     j.companyName ?? j.company,
     location:    j.location ?? 'Remote',
-    url:         j.jobUrl ?? j.url,
-    description: stripHtml(j.description ?? '').slice(0, 600),
+    url:         j.link ?? j.jobUrl ?? j.url,
+    description: stripHtml(j.descriptionHtml ?? j.descriptionText ?? j.description ?? '').slice(0, 600),
     salary:      j.salary ?? '',
     postedAt:    j.postedAt ?? j.listedAt,
     source:      'LinkedIn',
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     const searchQueries = buildQueries(roleType ?? '', skills ?? []);
     const kwds = roleKeywords(roleType ?? '');
 
-    const allJobs = await fetchLinkedIn(roleType ?? searchQueries[0], userCountry);
+    const allJobs = await fetchLinkedIn(roleType ?? searchQueries[0], userCountry, jobLimit);
 
     const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
