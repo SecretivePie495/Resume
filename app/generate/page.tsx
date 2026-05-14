@@ -8,11 +8,24 @@ interface JobResult {
   id: string;
   title: string;
   company: string;
+  companyLogo?: string;
+  companyWebsite?: string;
+  companyDescription?: string;
+  companyEmployeesCount?: number;
   location: string;
   url: string;
   description: string;
   salary?: string;
   postedAt?: string;
+  workplaceType?: string;
+  employmentType?: string;
+  seniorityLevel?: string;
+  applicantsCount?: string;
+  industries?: string;
+  jobFunction?: string;
+  recruiterName?: string;
+  recruiterTitle?: string;
+  recruiterUrl?: string;
   locationMatch: boolean;
   skillScore: number;
   alreadyTailored: boolean;
@@ -635,90 +648,165 @@ export default function GeneratePage() {
             </div>
           )}
 
-          {filteredJobs.map(job => (
-            <div key={job.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-slate-300 transition-colors">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center shrink-0">
-                      <span className="text-[11px] font-bold text-blue-600">
-                        {job.company.slice(0, 2).toUpperCase()}
-                      </span>
-                    </div>
+          {filteredJobs.map(job => {
+            const workplaceColor =
+              job.workplaceType?.toLowerCase().includes('remote') ? 'bg-green-50 text-green-700 border-green-200' :
+              job.workplaceType?.toLowerCase().includes('hybrid') ? 'bg-amber-50 text-amber-700 border-amber-200' :
+              'bg-slate-50 text-slate-500 border-slate-200';
+
+            return (
+              <div key={job.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-slate-300 transition-colors space-y-4">
+
+                {/* Top row: logo + title + actions */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    {/* Company logo */}
+                    {job.companyLogo ? (
+                      <img src={job.companyLogo} alt={job.company} className="w-10 h-10 rounded-lg object-contain border border-slate-100 shrink-0 bg-white" />
+                    ) : (
+                      <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0 border border-slate-100">
+                        <span className="text-xs font-bold text-blue-600">{job.company.slice(0, 2).toUpperCase()}</span>
+                      </div>
+                    )}
+
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-slate-900 leading-tight">{job.title}</h3>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-xs text-slate-500">{job.company}</span>
-                        <span className="text-slate-300">·</span>
-                        <span className="text-xs text-slate-500">{job.location}</span>
+                      {/* Company name + website */}
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {job.companyWebsite ? (
+                          <a href={job.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-blue-600 hover:underline">
+                            {job.company}
+                          </a>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-700">{job.company}</span>
+                        )}
+                        {job.companyEmployeesCount && (
+                          <>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-[11px] text-slate-400">{job.companyEmployeesCount.toLocaleString()} employees</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    {job.salary && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200">
-                        {job.salary}
+                  {/* Actions */}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {tailoredIds.has(job.id) ? (
+                      <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                        Tailored ✓
                       </span>
+                    ) : (
+                      <button
+                        onClick={() => tailorForJob(job)}
+                        disabled={tailoring === job.id}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                      >
+                        {tailoring === job.id ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Tailoring...
+                          </span>
+                        ) : 'Tailor Resume'}
+                      </button>
                     )}
-                    {job.postedAt && (
-                      <span className="text-[11px] text-slate-400">{daysAgo(job.postedAt)}</span>
-                    )}
+                    <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:text-blue-600 transition-colors">
+                      View Job ↗
+                    </a>
                   </div>
+                </div>
 
-                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{job.description}</p>
+                {/* Badges row */}
+                <div className="flex flex-wrap gap-1.5">
+                  {job.workplaceType && (
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${workplaceColor}`}>
+                      {job.workplaceType}
+                    </span>
+                  )}
+                  {job.employmentType && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200">
+                      {job.employmentType}
+                    </span>
+                  )}
+                  {job.seniorityLevel && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200">
+                      {job.seniorityLevel}
+                    </span>
+                  )}
+                  {job.industries && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200">
+                      {job.industries}
+                    </span>
+                  )}
+                  {job.location && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200">
+                      📍 {job.location}
+                    </span>
+                  )}
+                </div>
 
-                  {showDebug && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 items-center">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                        {job.source}
-                      </span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                        Score: {job.skillScore}
-                      </span>
-                      {job.matchedSkills.map(s => (
-                        <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
-                          ✓ {s}
-                        </span>
-                      ))}
-                      {job.matchedSkills.length === 0 && (
-                        <span className="text-[10px] text-slate-400 italic">matched on role title only</span>
+                {/* Meta row: salary, posted, applicants */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {job.salary && (
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      {job.salary}
+                    </span>
+                  )}
+                  {job.postedAt && (
+                    <span className="text-[11px] text-slate-400">{daysAgo(job.postedAt)}</span>
+                  )}
+                  {job.applicantsCount && (
+                    <span className="text-[11px] text-slate-400">{job.applicantsCount} applicants</span>
+                  )}
+                </div>
+
+                {/* Description */}
+                <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{job.description}</p>
+
+                {/* Recruiter */}
+                {job.recruiterName && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-700">{job.recruiterName}</p>
+                      {job.recruiterTitle && (
+                        <p className="text-[11px] text-slate-400 truncate max-w-xs">{job.recruiterTitle}</p>
                       )}
                     </div>
-                  )}
-                </div>
+                    {job.recruiterUrl && (
+                      <a
+                        href={job.recruiterUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-400 px-3 py-1 rounded-lg transition-all shrink-0 ml-3"
+                      >
+                        Connect on LinkedIn ↗
+                      </a>
+                    )}
+                  </div>
+                )}
 
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  {tailoredIds.has(job.id) ? (
-                    <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                      Tailored ✓
+                {/* Debug */}
+                {showDebug && (
+                  <div className="flex flex-wrap gap-1.5 items-center pt-1 border-t border-slate-100">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                      {job.source}
                     </span>
-                  ) : (
-                    <button
-                      onClick={() => tailorForJob(job)}
-                      disabled={tailoring === job.id}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                    >
-                      {tailoring === job.id ? (
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                          Tailoring...
-                        </span>
-                      ) : 'Tailor Resume'}
-                    </button>
-                  )}
-                  <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-slate-400 hover:text-blue-600 transition-colors"
-                  >
-                    View Job ↗
-                  </a>
-                </div>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                      Score: {job.skillScore}
+                    </span>
+                    {job.matchedSkills.map(s => (
+                      <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                        ✓ {s}
+                      </span>
+                    ))}
+                    {job.matchedSkills.length === 0 && (
+                      <span className="text-[10px] text-slate-400 italic">matched on role title only</span>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {tailoredIds.size > 0 && (
             <div className="flex justify-center pt-2">

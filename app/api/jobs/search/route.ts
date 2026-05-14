@@ -6,11 +6,24 @@ export interface JobResult {
   id: string;
   title: string;
   company: string;
+  companyLogo?: string;
+  companyWebsite?: string;
+  companyDescription?: string;
+  companyEmployeesCount?: number;
   location: string;
   url: string;
   description: string;
   salary?: string;
   postedAt?: string;
+  workplaceType?: string;
+  employmentType?: string;
+  seniorityLevel?: string;
+  applicantsCount?: string;
+  industries?: string;
+  jobFunction?: string;
+  recruiterName?: string;
+  recruiterTitle?: string;
+  recruiterUrl?: string;
   locationMatch: boolean;
   skillScore: number;
   alreadyTailored: boolean;
@@ -36,11 +49,6 @@ function matchesCountry(jobLocation: string, userCountry: string): boolean {
   if (country.includes('canada'))    return loc.includes('canada') || loc.includes('north america');
   if (country.includes('australia')) return loc.includes('australia') || loc.includes('apac');
   return loc.includes(country.split(' ')[0]);
-}
-
-function scoreJobBySkills(title: string, description: string, skills: string[]): number {
-  const haystack = `${title} ${description}`.toLowerCase();
-  return skills.reduce((n, skill) => n + (haystack.includes(skill.toLowerCase()) ? 1 : 0), 0);
 }
 
 const STOP_WORDS = new Set(['and','or','the','a','an','for','of','in','at','to','with','level','mid','senior','junior','lead','staff','principal','sr','jr']);
@@ -94,16 +102,30 @@ async function fetchLinkedIn(query: string, country: string, count: number): Pro
     }
   ).then(r => r.json()).catch(() => []);
 
-  return (Array.isArray(data) ? data : []).map((j: Record<string, string>) => ({
-    id:          `linkedin-${j.id ?? j.jobId ?? j.trackingId}`,
-    title:       j.title,
-    company:     j.companyName ?? j.company,
-    location:    j.location ?? 'Remote',
-    url:         j.link ?? j.jobUrl ?? j.url,
-    description: stripHtml(j.descriptionHtml ?? j.descriptionText ?? j.description ?? '').slice(0, 600),
-    salary:      j.salary ?? '',
-    postedAt:    j.postedAt ?? j.listedAt,
-    source:      'LinkedIn',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (Array.isArray(data) ? data : []).map((j: Record<string, any>) => ({
+    id:                   `linkedin-${j.id ?? j.jobId ?? j.trackingId}`,
+    title:                j.title,
+    company:              j.companyName ?? j.company,
+    companyLogo:          j.companyLogo ?? undefined,
+    companyWebsite:       j.companyWebsite ?? undefined,
+    companyDescription:   j.companyDescription ?? undefined,
+    companyEmployeesCount: j.companyEmployeesCount ?? undefined,
+    location:             j.location ?? 'Remote',
+    url:                  j.link ?? j.jobUrl ?? j.url,
+    description:          stripHtml(j.descriptionHtml ?? j.descriptionText ?? j.description ?? '').slice(0, 600),
+    salary:               j.salary ?? '',
+    postedAt:             j.postedAt ?? j.listedAt,
+    workplaceType:        Array.isArray(j.workplaceTypes) ? j.workplaceTypes[0] : j.workplaceTypes ?? undefined,
+    employmentType:       j.employmentType ?? undefined,
+    seniorityLevel:       j.seniorityLevel ?? undefined,
+    applicantsCount:      j.applicantsCount ?? undefined,
+    industries:           j.industries ?? undefined,
+    jobFunction:          j.jobFunction ?? undefined,
+    recruiterName:        j.jobPosterName ?? undefined,
+    recruiterTitle:       j.jobPosterTitle ?? undefined,
+    recruiterUrl:         j.jobPosterProfileUrl ?? undefined,
+    source:               'LinkedIn',
   })).filter(j => j.title && j.url);
 }
 
@@ -136,20 +158,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get already-tailored job URLs from DB
     const tailoredUrls = new Set(
       (await appQueries.list()).map(a => a.url).filter(Boolean) as string[]
     );
 
-    const userCountry = country ?? 'United States';
+    const userCountry  = country ?? 'United States';
     const searchQueries = buildQueries(roleType ?? '', skills ?? []);
-    const kwds = roleKeywords(roleType ?? '');
+    const kwds          = roleKeywords(roleType ?? '');
 
     const allJobs = await fetchLinkedIn(roleType ?? searchQueries[0], userCountry, jobLimit);
 
     const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
-    // Merge + deduplicate by ID and URL
     const seenIds  = new Set<string>();
     const seenUrls = new Set<string>();
     const raw: JobResult[] = [];
@@ -176,7 +196,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Sort: not-tailored first → location match → skill score → most recent
     raw.sort((a, b) => {
       if (a.alreadyTailored !== b.alreadyTailored) return a.alreadyTailored ? 1 : -1;
       if (a.locationMatch   !== b.locationMatch)   return a.locationMatch   ? -1 : 1;
@@ -186,7 +205,6 @@ export async function POST(req: NextRequest) {
 
     const result = raw.slice(0, jobLimit);
 
-    // Persist to history
     for (const j of result) {
       try {
         await pulledJobQueries.upsert(j.id, j.title, j.company, j.location, j.url, j.salary ?? null, j.postedAt ?? null, j.skillScore);
