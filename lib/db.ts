@@ -327,6 +327,12 @@ export function createDb(userId: string, userEmail?: string) {
       INSERT INTO pulled_jobs (user_id, external_id, title, company, location, url, salary, posted_at, skill_score)
       VALUES (${uid}, ${externalId}, ${title}, ${company}, ${location}, ${url}, ${salary}, ${postedAt}, ${skillScore})
       ON CONFLICT (user_id, external_id) DO UPDATE SET skill_score = EXCLUDED.skill_score, pulled_at = NOW()`,
+
+    delete: (id: number) =>
+      sql`DELETE FROM pulled_jobs WHERE id = ${id} AND user_id = ${uid}`,
+
+    deleteAll: () =>
+      sql`DELETE FROM pulled_jobs WHERE user_id = ${uid}`,
   };
 
   // ── Saved Resumes ────────────────────────────────────────────────────────────

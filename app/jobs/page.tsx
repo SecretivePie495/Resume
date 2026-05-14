@@ -321,6 +321,10 @@ function JobsPage() {
   const [statusSaving, setStatusSaving] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
+  // Pulled jobs selection
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [deletingJobs, setDeletingJobs]     = useState(false);
+
   // Inbox state
   const [inboxAccess, setInboxAccess]       = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
@@ -423,6 +427,46 @@ function JobsPage() {
     setPreview(null);
   }
 
+  function toggleJobSelection(id: number) {
+    setSelectedJobIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllJobs() {
+    if (selectedJobIds.size === pulledJobs.length) {
+      setSelectedJobIds(new Set());
+    } else {
+      setSelectedJobIds(new Set(pulledJobs.map(j => j.id)));
+    }
+  }
+
+  async function deleteSelectedJobs() {
+    const ids = Array.from(selectedJobIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Remove ${ids.length} job${ids.length === 1 ? '' : 's'} from history?`)) return;
+    setDeletingJobs(true);
+    await fetch('/api/jobs/history', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    setPulledJobs(prev => prev.filter(j => !selectedJobIds.has(j.id)));
+    setSelectedJobIds(new Set());
+    setDeletingJobs(false);
+  }
+
+  async function deleteAllJobs() {
+    if (!confirm(`Remove all ${pulledJobs.length} jobs from history? This cannot be undone.`)) return;
+    setDeletingJobs(true);
+    await fetch('/api/jobs/history', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+    setPulledJobs([]);
+    setSelectedJobIds(new Set());
+    setDeletingJobs(false);
+  }
+
   function handleCoverGenerated(appId: number, text: string) {
     setApps(prev => prev.map(a => a.id === appId ? { ...a, cover_letter: text } : a));
   }
@@ -498,86 +542,133 @@ function JobsPage() {
 
         {/* ── History tab ─────────────────────────────────────────── */}
         {pageTab === 'history' && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Company</th>
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Title</th>
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Location</th>
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Salary</th>
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Posted</th>
-                  <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Pulled</th>
-                  <th className="text-right px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {pulledJobs.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-16 text-center text-slate-400 text-sm">
-                      No jobs pulled yet.{' '}
-                      <Link href="/generate" className="text-blue-600 hover:underline">
-                        Run a job search to get started
-                      </Link>
-                    </td>
+          <div className="space-y-3">
+            {/* Toolbar */}
+            {pulledJobs.length > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm text-slate-500 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={selectedJobIds.size === pulledJobs.length && pulledJobs.length > 0}
+                      onChange={toggleAllJobs}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    {selectedJobIds.size > 0 ? `${selectedJobIds.size} selected` : 'Select all'}
+                  </label>
+                  {selectedJobIds.size > 0 && (
+                    <button
+                      onClick={deleteSelectedJobs}
+                      disabled={deletingJobs}
+                      className="text-sm font-medium text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {deletingJobs ? 'Removing...' : `Remove ${selectedJobIds.size} selected`}
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={deleteAllJobs}
+                  disabled={deletingJobs}
+                  className="text-sm font-medium text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                >
+                  Remove All
+                </button>
+              </div>
+            )}
+
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="w-10 px-4 py-3" />
+                    <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Company</th>
+                    <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Title</th>
+                    <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Location</th>
+                    <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Salary</th>
+                    <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Posted</th>
+                    <th className="text-left px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Pulled</th>
+                    <th className="text-right px-5 py-3 text-slate-500 font-medium text-xs uppercase tracking-wider">Actions</th>
                   </tr>
-                )}
-                {pulledJobs.map(job => (
-                  <tr key={job.id} className={`hover:bg-slate-50 transition-colors group ${job.alreadyTailored ? 'opacity-60' : ''}`}>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 bg-indigo-100 rounded-md flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-indigo-600">
-                            {job.company.slice(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-slate-900 whitespace-nowrap">{job.company}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-700 max-w-[200px]">
-                      <div className="truncate">{job.title}</div>
-                      {job.alreadyTailored && (
-                        <span className="text-[10px] text-green-600 font-medium">Tailored</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 text-xs max-w-[130px]">
-                      <div className="truncate">{job.location}</div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 text-xs">
-                      {job.salary || <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-400 text-xs">
-                      {job.posted_at
-                        ? new Date(job.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-400 text-xs">
-                      {new Date(job.pulled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        {job.url && (
-                          <a
-                            href={job.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-slate-400 hover:text-slate-700 opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            View ↗
-                          </a>
-                        )}
-                        <Link
-                          href={`/generate?url=${encodeURIComponent(job.url)}`}
-                          className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                        >
-                          Tailor Resume
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {pulledJobs.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-5 py-16 text-center text-slate-400 text-sm">
+                        No jobs pulled yet.{' '}
+                        <Link href="/generate" className="text-blue-600 hover:underline">
+                          Run a job search to get started
                         </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  )}
+                  {pulledJobs.map(job => (
+                    <tr
+                      key={job.id}
+                      className={`hover:bg-slate-50 transition-colors group ${job.alreadyTailored ? 'opacity-60' : ''} ${selectedJobIds.has(job.id) ? 'bg-blue-50/50' : ''}`}
+                    >
+                      <td className="px-4 py-3.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedJobIds.has(job.id)}
+                          onChange={() => toggleJobSelection(job.id)}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 bg-indigo-100 rounded-md flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-indigo-600">
+                              {job.company.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">{job.company}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-700 max-w-[200px]">
+                        <div className="truncate">{job.title}</div>
+                        {job.alreadyTailored && (
+                          <span className="text-[10px] text-green-600 font-medium">Tailored</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 text-xs max-w-[130px]">
+                        <div className="truncate">{job.location}</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500 text-xs">
+                        {job.salary || <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-400 text-xs">
+                        {job.posted_at
+                          ? new Date(job.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                          : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-400 text-xs">
+                        {new Date(job.pulled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          {job.url && (
+                            <a
+                              href={job.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-slate-400 hover:text-slate-700 opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              View ↗
+                            </a>
+                          )}
+                          <Link
+                            href={`/generate?url=${encodeURIComponent(job.url)}`}
+                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            Tailor Resume
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
