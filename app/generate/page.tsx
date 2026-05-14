@@ -14,6 +14,7 @@ interface JobResult {
   companyEmployeesCount?: number;
   location: string;
   url: string;
+  linkedinUrl?: string;
   description: string;
   salary?: string;
   postedAt?: string;
@@ -711,8 +712,13 @@ export default function GeneratePage() {
                       </button>
                     )}
                     <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:text-blue-600 transition-colors">
-                      View Job ↗
+                      Apply ↗
                     </a>
+                    {job.linkedinUrl && job.linkedinUrl !== job.url && (
+                      <a href={job.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:text-blue-600 transition-colors">
+                        LinkedIn ↗
+                      </a>
+                    )}
                   </div>
                 </div>
 

@@ -12,6 +12,7 @@ export interface JobResult {
   companyEmployeesCount?: number;
   location: string;
   url: string;
+  linkedinUrl?: string;
   description: string;
   salary?: string;
   postedAt?: string;
@@ -112,7 +113,8 @@ async function fetchLinkedIn(query: string, country: string, count: number): Pro
     companyDescription:   j.companyDescription ?? undefined,
     companyEmployeesCount: j.companyEmployeesCount ?? undefined,
     location:             j.location ?? 'Remote',
-    url:                  j.link ?? j.jobUrl ?? j.url,
+    url:                  j.applyUrl ?? j.link ?? j.jobUrl ?? j.url,
+    linkedinUrl:          j.link ?? undefined,
     description:          stripHtml(j.descriptionHtml ?? j.descriptionText ?? j.description ?? '').slice(0, 600),
     salary:               j.salary ?? '',
     postedAt:             j.postedAt ?? j.listedAt,
