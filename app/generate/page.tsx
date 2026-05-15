@@ -712,11 +712,11 @@ export default function GeneratePage() {
                       </button>
                     )}
                     <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:text-blue-600 transition-colors">
-                      Apply ↗
+                      {job.linkedinUrl && job.linkedinUrl !== job.url ? 'Apply on site ↗' : 'Apply on LinkedIn ↗'}
                     </a>
                     {job.linkedinUrl && job.linkedinUrl !== job.url && (
                       <a href={job.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-slate-400 hover:text-blue-600 transition-colors">
-                        LinkedIn ↗
+                        View on LinkedIn ↗
                       </a>
                     )}
                   </div>
