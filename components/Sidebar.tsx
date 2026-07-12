@@ -8,6 +8,7 @@ import UsageWidget from './UsageWidget';
 import { PLANS, PLAN_ORDER, type PlanId } from '@/lib/plans';
 
 const NAV = [
+  { href: '/quick',     label: 'Quick Tailor' },
   { href: '/generate',  label: 'Resume Builder' },
   { href: '/jobs',      label: 'AI Tailor' },
   { href: '/templates', label: 'Templates' },
