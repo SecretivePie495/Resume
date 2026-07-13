@@ -1,34 +1,40 @@
 export const BASE = {
-  name: 'UDO ONYEKWERE',
-  contact: 'Denton, TX &nbsp;|&nbsp; (940) 300-6036 &nbsp;|&nbsp; udo.onyekwere.resume@gmail.com &nbsp;|&nbsp; linkedin.com/in/udoonyekwere',
+  name: 'Udo Onyekwere',
+  contact: 'Denton, TX &nbsp;|&nbsp; 940-300-6036 &nbsp;|&nbsp; udo.onyekwere.resume@gmail.com &nbsp;|&nbsp; linkedin.com/in/udoonyekwere',
   utg: {
-    company: 'UTG Media &nbsp;|&nbsp; Dallas, TX &nbsp;|&nbsp; Remote',
+    company: 'UTG Media &nbsp;|&nbsp; Dallas, TX',
     dates: 'Nov 2022 &ndash; Present',
+    title: 'No-Code Developer, AI Integration Specialist',
+    bullets: [
+      'Architected Airtable-based marketing and CRM systems automating campaign tracking, content approvals, and performance analytics across multiple clients.',
+      'Built Airtable automations and interfaces integrating OpenAI, Make, and Slack for real-time reporting and content scheduling.',
+      'Designed multi-table data models and formula-driven logic to unify marketing and sales pipelines, increasing collaboration and transparency.',
+      'Partnered with fintech and enterprise clients (including Goldman Sachs and Fortezsa) to automate Airtable CRM and inventory tracking workflows, boosting data accuracy and speed by 30&ndash;40%.',
+      'Delivered internal Airtable training sessions to cross-functional teams, documenting best practices and workflow guides.',
+      'Oversaw Airtable data integrity via validation scripts, sync tables, and field governance models.',
+    ],
   },
   aafes: {
-    title: 'Data Security Analyst &ndash; Intrusion Detection &amp; Firewall Security',
+    title: 'Data Security Analyst, Intrusion Detection &amp; Prevention &ndash; Firewall Security',
     dates: 'Nov 2022 &ndash; Present',
-    company: 'Army &amp; Air Force Exchange Service (AAFES) &ndash; Department of Defense &nbsp;|&nbsp; Dallas, TX',
+    company: 'AAFES &ndash; Army &amp; Air Force Exchange Service, Department of Defense &nbsp;|&nbsp; Dallas, TX',
     bullets: [
-      'Operate in a compliance-driven DoD environment &mdash; monitoring network traffic, managing incident workflows in ServiceNow, and maintaining process discipline across global Army and Air Force infrastructure.',
-      'Configure and maintain Cisco ASA firewalls and Cisco FMC &mdash; enforcing security policies and documenting all changes for audit and compliance.',
+      'Monitored and analyzed Cisco FMC security logs to identify and respond to security incidents, documenting incidents and remediation steps in ServiceNow for streamlined tracking and resolution.',
+      'Experienced in configuring Cisco ASA Firewalls &amp; scripting within the CLI and SSH.',
+      'Ensured secure and reliable network operations by designing, implementing, and maintaining computer networks and firewall technologies internationally across every Army and Air Force database worldwide.',
     ],
   },
   projects: [
     {
-      name: 'Faceless B-Roll &mdash; facelessbroll.com',
-      bullet: 'AI-powered content platform generating B-roll video for 25+ creators. Built on Python, OpenAI API, and automated media pipelines.',
-    },
-    {
-      name: 'CreatorSplit',
-      bullet: 'Full-stack web application for content creator revenue splits. Built with Next.js, Supabase, and Vercel.',
+      name: 'Goldman Sachs &mdash; AI Automation for Inventory Management',
+      bullet: 'Led the design and implementation of AI-driven automation agents leveraging OpenAI and Claude to optimize inventory workflows, reducing manual tracking efforts by 40%. Built experimental prompt chains and multi-agent workflows to monitor and predict inventory needs, integrating structured data pipelines from internal systems.',
     },
   ],
   education: {
     degree: 'Bachelor of Computer Information Systems',
     school: 'University of Texas at Tyler &ndash; Soules College of Business, Tyler, TX',
     dates: '2018 &ndash; 2022',
-    honors: 'Presidential Fellowship (Full-Ride Academic Scholarship)',
+    honors: 'Presidential Fellowship (Full-Ride Academic Scholarship) &amp; Cybersecurity Certification',
   },
 };
 
