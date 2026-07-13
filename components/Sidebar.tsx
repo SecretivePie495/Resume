@@ -11,7 +11,6 @@ const NAV = [
   { href: '/quick',     label: 'Quick Tailor' },
   { href: '/generate',  label: 'Resume Builder' },
   { href: '/jobs',      label: 'AI Tailor' },
-  { href: '/templates', label: 'Templates' },
 ];
 
 function GoldenMailbox() {
