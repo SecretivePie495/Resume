@@ -66,8 +66,8 @@ export const CSS = `
   ul li { margin-bottom: 2.5px; list-style-type: square; }
   .job { margin-bottom: 9px; page-break-inside: avoid; break-inside: avoid; }
   .job-header { display: flex; justify-content: space-between; align-items: baseline; }
-  .job-title { font-weight: bold; font-size: 10.5pt; }
-  .job-date { font-weight: bold; font-size: 10pt; white-space: nowrap; margin-left: 10px; }
+  .job-title { font-weight: bold; font-size: 10.5pt; flex: 1 1 auto; min-width: 0; }
+  .job-date { font-weight: bold; font-size: 10pt; white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
   .job-company { font-weight: bold; margin-bottom: 3px; font-size: 10pt; }
   .project { margin-bottom: 7px; page-break-inside: avoid; break-inside: avoid; }
   .project-name { font-weight: bold; margin-bottom: 2px; }
