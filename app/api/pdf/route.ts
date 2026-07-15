@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
     page = await browser.newPage();
     await page.setContent(app.resume_html, { waitUntil: 'load' });
     const pdf = await page.pdf({ format: 'Letter', printBackground: true });
-    const filename = `Resume_${(app.company ?? 'Job').replace(/\s+/g, '_')}.pdf`;
+    const company = (app.company ?? 'Job').replace(/[\\/:*?"<>|]/g, '').trim();
+    const filename = `Udo Onyekwere ${company}.pdf`;
     return new NextResponse(Buffer.from(pdf), {
       headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${filename}"` },
     });
