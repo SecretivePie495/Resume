@@ -10,9 +10,9 @@ function resumeToText(json: string): string {
     return [
       r.subtitle,
       r.summary,
+      'Core Competencies: ' + r.core_competencies,
       'Skills: ' + r.skills.map(s => `${s.cat}: ${s.items}`).join(' | '),
       ...r.utg_bullets,
-      r.lead_revival_bullet,
     ].join('\n');
   } catch {
     return json;
