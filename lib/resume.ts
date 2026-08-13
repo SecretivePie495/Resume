@@ -211,3 +211,31 @@ ${projectsHtml}
 </body>
 </html>`;
 }
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+export function buildCoverLetterHTML(text: string, style: ResumeStyle = DEFAULT_STYLE): string {
+  const fontStack = FONT_OPTIONS[style.fontFamily] ?? FONT_OPTIONS['Times New Roman'];
+  const paragraphs = text
+    .split(/\n\s*\n/)
+    .map(block => `<p>${escapeHtml(block).replace(/\n/g, '<br>')}</p>`)
+    .join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><style>
+  @page { margin: 0.9in; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: ${fontStack}; font-size: ${style.bodySize}pt; color: #000; line-height: 1.5; }
+  p { margin-bottom: 12px; white-space: pre-wrap; }
+</style></head>
+<body>
+${paragraphs}
+</body>
+</html>`;
+}

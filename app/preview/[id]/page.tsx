@@ -142,12 +142,21 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
               <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
                 <span className="text-xs text-zinc-400 font-medium">Cover Letter</span>
                 {app.cover_letter && (
-                  <button
-                    onClick={() => copyToClipboard(app.cover_letter!)}
-                    className="text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded-md transition-colors"
-                  >
-                    {copied ? 'Copied!' : 'Copy'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => copyToClipboard(app.cover_letter!)}
+                      className="text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded-md transition-colors"
+                    >
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                    <a
+                      href={`/api/cover-pdf?id=${app.id}`}
+                      target="_blank"
+                      className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded-md transition-colors"
+                    >
+                      Download PDF
+                    </a>
+                  </div>
                 )}
               </div>
               {app.cover_letter ? (
