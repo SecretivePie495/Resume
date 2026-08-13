@@ -10,7 +10,7 @@ The JSON must have exactly these fields:
 - summary: string (2-3 sentence professional profile tailored to the JD, use &mdash; for em-dashes, &amp; for ampersands)
 - core_competencies: string (8-11 short keyword phrases separated by " | ", tailored to the JD, use &amp; for ampersands)
 - skills: array of exactly 2 objects with "cat" and "items" fields — two skill categories most relevant to the JD (e.g. a domain/technical category and a tools/automation category), "items" is a comma-separated list, use &amp; for ampersands in "cat"
-- utg_title: string (a lightly reworded version of the candidate's real UTG Media title, "No-Code Developer, AI Integration Specialist", emphasizing whichever part is most relevant to the JD — do not invent a different job title or claim "Founder", use &amp; for ampersand)
+- utg_title: string (a lightly reworded version of the candidate's real UTG Media title, "Founder & Lead Software Engineer", emphasizing whichever part is most relevant to the JD — do not invent a different job title, use &amp; for ampersand)
 - utg_bullets: array of 4-5 bullet strings — select and lightly rephrase from the candidate's REAL UTG Media bullets (given in BASE RESUME DATA under utg.bullets) to emphasize what's most relevant to the JD. Do not invent achievements not grounded in those real bullets. (use &mdash; for em-dashes, &amp; for ampersands)`;
 
 const COVER_LETTER_SYSTEM = `You are a professional cover letter writer. Write a formal business-style cover letter using the exact structure below. Use plain text only — no markdown, no bullet points, no asterisks.
