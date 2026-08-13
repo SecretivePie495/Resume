@@ -1,9 +1,23 @@
 export const BASE = {
   name: 'Udo Onyekwere',
-  contact: 'Denton, TX &nbsp;|&nbsp; (917) 675-5324 &nbsp;|&nbsp; onyekwereudoai@gmail.com &nbsp;|&nbsp; linkedin.com/in/udoonyekwere',
+  location: 'Denton, TX',
+  phone: '(917) 675-5324',
+  email: 'onyekwereudoai@gmail.com',
+  linkedinUrl: 'https://linkedin.com/in/udoonyekwere',
+  linkedinLabel: 'LinkedIn',
+  skills: [
+    { cat: 'AI &amp; Automation', items: 'OpenAI, Claude, Claude Code, LangChain, MCPs, AI Agents, Retrieval-Augmented Generation (RAG), Prompt Engineering, Custom Workflow Automation' },
+    { cat: 'Automation Platforms', items: 'React, Next.js, TypeScript, Redux, Tailwind CSS, Bootstrap, Responsive Web Design' },
+    { cat: 'Enterprise Systems &amp; Integration', items: 'Node.js, Express.js, FastAPI, Microservices, REST APIs, Webhooks' },
+    { cat: 'Automation &amp; Integration', items: 'Make, Zapier, n8n, Airtable Automations, ServiceNow, Slack, HubSpot, Microsoft Teams' },
+    { cat: 'Languages', items: 'PostgreSQL, SQL Server, Redis, Airtable' },
+    { cat: 'Cloud &amp; DevOps', items: 'Microsoft Azure, Azure App Services, Azure Functions' },
+    { cat: 'Security', items: 'OAuth 2.0, JWT, RBAC, Azure Active Directory, Microsoft Graph API' },
+    { cat: 'AI &amp; Generative AI', items: 'OpenAI, Claude, LangChain, Retrieval-Augmented Generation (RAG), AI Agents, Prompt Engineering' },
+    { cat: 'Software Engineering', items: 'Object-Oriented Design (OOD), SOLID Principles, Design Patterns, Unit Testing, Integration Testing, Code Reviews, Git Workflow, Performance Optimization, API Design, System Integration' },
+  ],
   utg: {
     company: 'UTG Media',
-    location: 'Dallas, TX',
     dates: 'Jan 2023 &ndash; Present',
     title: 'Founder &amp; Lead Software Engineer',
     bullets: [
@@ -18,8 +32,7 @@ export const BASE = {
     ],
   },
   aafes: {
-    company: 'AAFES &mdash; Army &amp; Air Force Exchange Service, Department of Defense',
-    location: 'Dallas, TX',
+    company: 'Army &amp; Airforce Exchange Service - AAFES',
     dates: 'Oct 2022 &ndash; Present',
     title: 'Data Security Analyst',
     bullets: [
@@ -34,7 +47,6 @@ export const BASE = {
   },
   purvis: {
     company: 'Purvis Industries',
-    location: 'Dallas, TX',
     dates: 'June 2019 &ndash; July 2022',
     title: 'Full Stack Developer',
     bullets: [
@@ -48,7 +60,6 @@ export const BASE = {
   },
   uttyler_it: {
     company: 'University of Texas at Tyler',
-    location: 'Tyler, TX',
     dates: 'Aug 2021 &ndash; Apr 2022',
     title: 'Information Technology Support Specialist',
     bullets: [
@@ -58,6 +69,16 @@ export const BASE = {
       'Supported Microsoft Teams, Zoom, VPN connectivity, endpoint deployments, and enterprise IT operations while assisting faculty, staff, and students.',
     ],
   },
+  projects: [
+    {
+      title: 'Goldman Sachs &ndash; AI Automation for Inventory Management',
+      bullets: [
+        'Led the design and implementation of AI-driven automation agents leveraging OpenAI and Claude to optimize inventory workflows, reducing manual tracking efforts by 40%.',
+        'Built experimental prompt chains and multi-agent workflows to monitor and predict inventory needs, integrating structured data pipelines from internal systems.',
+        'Developed secure full-stack application components using React, Node.js, REST APIs, and PostgreSQL, integrating enterprise inventory systems with AI services while providing real-time dashboards, workflow management, and operational reporting.',
+      ],
+    },
+  ],
   education: {
     degree: 'Bachelor of Science',
     school: 'The University of Texas at Tyler',
@@ -69,8 +90,6 @@ export const BASE = {
 export interface TailoredJob {
   subtitle: string;
   summary: string;
-  core_competencies: string;
-  skills: Array<{ cat: string; items: string }>;
   utg_title: string;
   utg_bullets: string[];
 }
@@ -80,49 +99,55 @@ export const CSS = `
   @page :first { margin-top: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Calibri', 'Arial', sans-serif;
+    font-family: 'Times New Roman', Times, serif;
     font-size: 10.5pt;
     color: #000;
-    padding: 0.60in 0.70in;
-    line-height: 1.33;
+    padding: 0.55in 0.7in;
+    line-height: 1.32;
   }
-  .name { text-align: center; font-size: 26pt; font-weight: bold; color: #1a3468; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
-  .subtitle { text-align: center; font-size: 11pt; font-weight: bold; color: #1a3468; margin-bottom: 6px; }
-  .contact { text-align: center; font-size: 10pt; color: #222; margin-bottom: 10px; }
-  .section-header { color: #1a3468; font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #1a3468; padding-bottom: 2px; margin-bottom: 7px; margin-top: 12px; }
-  ul { margin-left: 18px; margin-bottom: 5px; }
-  ul li { margin-bottom: 2.5px; list-style-type: square; }
-  .job { margin-bottom: 9px; page-break-inside: avoid; break-inside: avoid; }
-  .job-header { display: flex; justify-content: space-between; align-items: baseline; }
-  .job-company { font-weight: bold; font-size: 10.5pt; flex: 1 1 auto; min-width: 0; }
-  .job-date { font-weight: bold; font-size: 10pt; white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
-  .job-subheader { display: flex; justify-content: space-between; align-items: baseline; font-style: italic; margin-bottom: 3px; }
-  .job-title { font-size: 10pt; flex: 1 1 auto; min-width: 0; }
-  .job-location { font-size: 10pt; white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
-  .skill-line { margin-bottom: 4px; }
+  .name { text-align: center; font-size: 21pt; font-weight: bold; color: #1f3a5f; margin-bottom: 2px; }
+  .subtitle { text-align: center; font-size: 11pt; font-weight: bold; color: #444444; margin-bottom: 4px; }
+  .contact { text-align: center; font-size: 9.5pt; color: #444444; margin-bottom: 8px; }
+  .contact a { color: #0000ff; text-decoration: underline; }
+  .section-header { color: #1f3a5f; font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; margin-top: 10px; }
+  .summary { text-align: justify; margin-bottom: 4px; }
+  ul { margin-left: 16px; margin-bottom: 4px; }
+  ul li { margin-bottom: 2px; list-style-type: disc; text-align: justify; }
+  .job { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid; }
+  .job-header { display: flex; justify-content: space-between; align-items: baseline; font-size: 10.5pt; }
+  .job-header b { color: #1f3a5f; }
+  .job-date { font-style: italic; color: #444444; font-size: 10pt; white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
+  .skill-line { margin-bottom: 3px; }
+  .skill-line strong { color: #1f3a5f; }
   a { color: #000; }
-  p { margin-bottom: 5px; }
+  p { margin-bottom: 4px; }
 `;
 
-function jobBlock(company: string, dates: string, title: string, location: string, bullets: string[]): string {
+function jobBlock(company: string, title: string, dates: string, bullets: string[]): string {
   const bulletsHtml = bullets.map(b => `<li>${b}</li>`).join('\n    ');
   return `
 <div class="job">
   <div class="job-header">
-    <span class="job-company">${company}</span>
+    <b>${company} &mdash; ${title}</b>
     <span class="job-date">${dates}</span>
-  </div>
-  <div class="job-subheader">
-    <span class="job-title">${title}</span>
-    <span class="job-location">${location}</span>
   </div>
   <ul>${bulletsHtml}</ul>
 </div>`;
 }
 
+function projectBlock(title: string, bullets: string[]): string {
+  const bulletsHtml = bullets.map(b => `<li>${b}</li>`).join('\n    ');
+  return `
+<div class="job">
+  <div class="job-header"><b>${title}</b></div>
+  <ul>${bulletsHtml}</ul>
+</div>`;
+}
+
 export function buildHTML(job: TailoredJob): string {
-  const skillsHtml = job.skills.map(s => `<p class="skill-line"><strong>${s.cat}:</strong> ${s.items}</p>`).join('\n');
+  const skillsHtml = BASE.skills.map(s => `<p class="skill-line"><strong>${s.cat}:</strong> ${s.items}</p>`).join('\n');
   const edu = BASE.education;
+  const projectsHtml = BASE.projects.map(p => projectBlock(p.title, p.bullets)).join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -130,20 +155,21 @@ export function buildHTML(job: TailoredJob): string {
 <body>
 <div class="name">${BASE.name}</div>
 <div class="subtitle">${job.subtitle}</div>
-<div class="contact">${BASE.contact}</div>
-<div class="section-header">Professional Profile</div>
-<p>${job.summary}</p>
-<div class="section-header">Core Competencies</div>
-<p>${job.core_competencies}</p>
+<div class="contact">${BASE.location} &nbsp;|&nbsp; ${BASE.phone} &nbsp;|&nbsp; ${BASE.email} &nbsp;|&nbsp; <a href="${BASE.linkedinUrl}">${BASE.linkedinLabel}</a></div>
+<div class="section-header">Professional Summary</div>
+<p class="summary">${job.summary}</p>
 <div class="section-header">Technical Skills</div>
 ${skillsHtml}
 <div class="section-header">Experience</div>
-${jobBlock(BASE.utg.company, BASE.utg.dates, job.utg_title, BASE.utg.location, job.utg_bullets)}
-${jobBlock(BASE.aafes.company, BASE.aafes.dates, BASE.aafes.title, BASE.aafes.location, BASE.aafes.bullets)}
-${jobBlock(BASE.purvis.company, BASE.purvis.dates, BASE.purvis.title, BASE.purvis.location, BASE.purvis.bullets)}
-${jobBlock(BASE.uttyler_it.company, BASE.uttyler_it.dates, BASE.uttyler_it.title, BASE.uttyler_it.location, BASE.uttyler_it.bullets)}
+${jobBlock(BASE.utg.company, job.utg_title, BASE.utg.dates, job.utg_bullets)}
+${jobBlock(BASE.aafes.company, BASE.aafes.title, BASE.aafes.dates, BASE.aafes.bullets)}
+${jobBlock(BASE.purvis.company, BASE.purvis.title, BASE.purvis.dates, BASE.purvis.bullets)}
+${jobBlock(BASE.uttyler_it.company, BASE.uttyler_it.title, BASE.uttyler_it.dates, BASE.uttyler_it.bullets)}
 <div class="section-header">Education</div>
-<p>${edu.degree} &mdash; ${edu.school} &nbsp;|&nbsp; ${edu.dates} &nbsp;|&nbsp; ${edu.honors}</p>
+<div class="job-header"><b>${edu.degree} &mdash; ${edu.school}</b><span class="job-date">${edu.dates}</span></div>
+<p>${edu.honors}</p>
+<div class="section-header">Key Projects</div>
+${projectsHtml}
 </body>
 </html>`;
 }

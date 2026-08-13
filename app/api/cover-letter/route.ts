@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateCoverLetter } from '@/lib/claude';
 import { createDb } from '@/lib/db';
 import { getAuthUserId } from '@/lib/auth';
-import { TailoredJob } from '@/lib/resume';
+import { BASE, TailoredJob } from '@/lib/resume';
 
 function resumeToText(json: string): string {
   try {
@@ -10,8 +10,7 @@ function resumeToText(json: string): string {
     return [
       r.subtitle,
       r.summary,
-      'Core Competencies: ' + r.core_competencies,
-      'Skills: ' + r.skills.map(s => `${s.cat}: ${s.items}`).join(' | '),
+      'Skills: ' + BASE.skills.map(s => `${s.cat}: ${s.items}`).join(' | '),
       ...r.utg_bullets,
     ].join('\n');
   } catch {
