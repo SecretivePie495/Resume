@@ -72,6 +72,19 @@ export async function initDb() {
     )`;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS resume_style (
+      user_id          TEXT PRIMARY KEY,
+      font_family      TEXT NOT NULL DEFAULT 'Times New Roman',
+      name_size        REAL NOT NULL DEFAULT 21,
+      subtitle_size    REAL NOT NULL DEFAULT 11,
+      section_size     REAL NOT NULL DEFAULT 12,
+      body_size        REAL NOT NULL DEFAULT 10.5,
+      accent_color     TEXT NOT NULL DEFAULT '#1f3a5f',
+      secondary_color  TEXT NOT NULL DEFAULT '#444444',
+      updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS saved_resumes (
       id         SERIAL PRIMARY KEY,
       user_id    TEXT NOT NULL DEFAULT 'owner',
@@ -314,6 +327,43 @@ export function createDb(userId: string, userEmail?: string) {
       ON CONFLICT (user_id) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()`,
   };
 
+  // ── Resume Style ─────────────────────────────────────────────────────────────
+
+  interface StyleRow {
+    font_family: string;
+    name_size: number;
+    subtitle_size: number;
+    section_size: number;
+    body_size: number;
+    accent_color: string;
+    secondary_color: string;
+  }
+
+  const styleQueries = {
+    get: async (): Promise<StyleRow | undefined> => {
+      const rows = await sql`
+        SELECT font_family, name_size, subtitle_size, section_size, body_size, accent_color, secondary_color
+        FROM resume_style WHERE user_id = ${uid}`;
+      return rows[0] as StyleRow | undefined;
+    },
+
+    upsert: (style: StyleRow) => sql`
+      INSERT INTO resume_style
+        (user_id, font_family, name_size, subtitle_size, section_size, body_size, accent_color, secondary_color, updated_at)
+      VALUES
+        (${uid}, ${style.font_family}, ${style.name_size}, ${style.subtitle_size}, ${style.section_size},
+         ${style.body_size}, ${style.accent_color}, ${style.secondary_color}, NOW())
+      ON CONFLICT (user_id) DO UPDATE SET
+        font_family     = EXCLUDED.font_family,
+        name_size       = EXCLUDED.name_size,
+        subtitle_size   = EXCLUDED.subtitle_size,
+        section_size    = EXCLUDED.section_size,
+        body_size       = EXCLUDED.body_size,
+        accent_color    = EXCLUDED.accent_color,
+        secondary_color = EXCLUDED.secondary_color,
+        updated_at      = NOW()`,
+  };
+
   // ── Pulled Jobs ──────────────────────────────────────────────────────────────
 
   const pulledJobQueries = {
@@ -405,6 +455,7 @@ export function createDb(userId: string, userEmail?: string) {
   return {
     queries,
     resumeQueries,
+    styleQueries,
     pulledJobQueries,
     savedResumeQueries,
     gmailTokenQueries,

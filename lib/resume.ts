@@ -94,34 +94,68 @@ export interface TailoredJob {
   utg_bullets: string[];
 }
 
-export const CSS = `
+export interface ResumeStyle {
+  fontFamily: string;
+  nameSize: number;
+  subtitleSize: number;
+  sectionSize: number;
+  bodySize: number;
+  accentColor: string;
+  secondaryColor: string;
+}
+
+export const FONT_OPTIONS: Record<string, string> = {
+  'Times New Roman': `'Times New Roman', Times, serif`,
+  'Georgia': `Georgia, 'Times New Roman', serif`,
+  'Calibri': `Calibri, 'Segoe UI', Arial, sans-serif`,
+  'Arial': `Arial, Helvetica, sans-serif`,
+  'Helvetica': `Helvetica, Arial, sans-serif`,
+};
+
+export const DEFAULT_STYLE: ResumeStyle = {
+  fontFamily: 'Times New Roman',
+  nameSize: 21,
+  subtitleSize: 11,
+  sectionSize: 12,
+  bodySize: 10.5,
+  accentColor: '#1f3a5f',
+  secondaryColor: '#444444',
+};
+
+function buildCSS(style: ResumeStyle): string {
+  const fontStack = FONT_OPTIONS[style.fontFamily] ?? FONT_OPTIONS['Times New Roman'];
+  const contactSize = Math.max(7, style.bodySize - 1);
+  const dateSize = Math.max(7, style.bodySize - 0.5);
+
+  return `
   @page { margin-top: 0.45in; }
   @page :first { margin-top: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 10.5pt;
+    font-family: ${fontStack};
+    font-size: ${style.bodySize}pt;
     color: #000;
     padding: 0.55in 0.7in;
     line-height: 1.32;
   }
-  .name { text-align: center; font-size: 21pt; font-weight: bold; color: #1f3a5f; margin-bottom: 2px; }
-  .subtitle { text-align: center; font-size: 11pt; font-weight: bold; color: #444444; margin-bottom: 4px; }
-  .contact { text-align: center; font-size: 9.5pt; color: #444444; margin-bottom: 8px; }
+  .name { text-align: center; font-size: ${style.nameSize}pt; font-weight: bold; color: ${style.accentColor}; margin-bottom: 2px; }
+  .subtitle { text-align: center; font-size: ${style.subtitleSize}pt; font-weight: bold; color: ${style.secondaryColor}; margin-bottom: 4px; }
+  .contact { text-align: center; font-size: ${contactSize}pt; color: ${style.secondaryColor}; margin-bottom: 8px; }
   .contact a { color: #0000ff; text-decoration: underline; }
-  .section-header { color: #1f3a5f; font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; margin-top: 10px; }
+  .section-header { color: ${style.accentColor}; font-size: ${style.sectionSize}pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; margin-top: 10px; }
   .summary { text-align: justify; margin-bottom: 4px; }
   ul { margin-left: 16px; margin-bottom: 4px; }
   ul li { margin-bottom: 2px; list-style-type: disc; text-align: justify; }
   .job { margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid; }
-  .job-header { display: flex; justify-content: space-between; align-items: baseline; font-size: 10.5pt; }
-  .job-header b { color: #1f3a5f; }
-  .job-date { font-style: italic; color: #444444; font-size: 10pt; white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
+  .job-header { display: flex; justify-content: space-between; align-items: baseline; font-size: ${style.bodySize}pt; }
+  .job-header b { color: ${style.accentColor}; }
+  .job-date { font-style: italic; color: ${style.secondaryColor}; font-size: ${dateSize}pt; white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
   .skill-line { margin-bottom: 3px; }
-  .skill-line strong { color: #1f3a5f; }
+  .skill-line strong { color: ${style.accentColor}; }
   a { color: #000; }
   p { margin-bottom: 4px; }
 `;
+}
 
 function jobBlock(company: string, title: string, dates: string, bullets: string[]): string {
   const bulletsHtml = bullets.map(b => `<li>${b}</li>`).join('\n    ');
@@ -144,14 +178,14 @@ function projectBlock(title: string, bullets: string[]): string {
 </div>`;
 }
 
-export function buildHTML(job: TailoredJob): string {
+export function buildHTML(job: TailoredJob, style: ResumeStyle = DEFAULT_STYLE): string {
   const skillsHtml = BASE.skills.map(s => `<p class="skill-line"><strong>${s.cat}:</strong> ${s.items}</p>`).join('\n');
   const edu = BASE.education;
   const projectsHtml = BASE.projects.map(p => projectBlock(p.title, p.bullets)).join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><style>${CSS}</style></head>
+<head><meta charset="UTF-8"><style>${buildCSS(style)}</style></head>
 <body>
 <div class="name">${BASE.name}</div>
 <div class="subtitle">${job.subtitle}</div>
