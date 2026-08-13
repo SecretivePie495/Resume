@@ -20,7 +20,7 @@ STRUCTURE (output each section separated by a blank line):
    Street address (or City, State if no street found)
    Phone number
    Email address
-   [Today's date in "Month D, YYYY" format]
+   [Use the exact TODAY'S DATE value provided in the user message — do not calculate or guess a date]
    [blank line]
    Hiring Manager's Name and Title (use "Hiring Manager" if unknown)
    [Company Name]
@@ -142,13 +142,15 @@ export async function generateCoverLetter(
     ? `RAW RESUME (use this to extract name, address, phone, email):\n${rawResume}\n\nTAILORED RESUME HIGHLIGHTS:\n${resumeJson}`
     : `CANDIDATE RESUME:\n${resumeJson}`;
 
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 900,
     system: [{ type: 'text', text: COVER_LETTER_SYSTEM, cache_control: { type: 'ephemeral' } }],
     messages: [{
       role: 'user',
-      content: `${candidateSection}\n\nJOB: ${jobTitle} at ${company}\n\nJOB DESCRIPTION:\n${jd}`,
+      content: `TODAY'S DATE: ${today}\n\n${candidateSection}\n\nJOB: ${jobTitle} at ${company}\n\nJOB DESCRIPTION:\n${jd}`,
     }],
   });
 

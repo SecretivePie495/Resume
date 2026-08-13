@@ -1,7 +1,7 @@
 export const BASE = {
   name: 'Udo Onyekwere',
   location: 'Denton, TX',
-  phone: '(917) 675-5324',
+  phone: '(940) 350-9142',
   email: 'onyekwereudoai@gmail.com',
   linkedinUrl: 'https://linkedin.com/in/udoonyekwere',
   linkedinLabel: 'LinkedIn',

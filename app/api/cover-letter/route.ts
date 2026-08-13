@@ -5,16 +5,23 @@ import { getAuthUserId } from '@/lib/auth';
 import { BASE, TailoredJob } from '@/lib/resume';
 
 function resumeToText(json: string): string {
+  const contact = [
+    `Name: ${BASE.name}`,
+    `Location: ${BASE.location}`,
+    `Phone: ${BASE.phone}`,
+    `Email: ${BASE.email}`,
+  ];
   try {
     const r = JSON.parse(json) as TailoredJob;
     return [
+      ...contact,
       r.subtitle,
       r.summary,
       'Skills: ' + BASE.skills.map(s => `${s.cat}: ${s.items}`).join(' | '),
       ...r.utg_bullets,
     ].join('\n');
   } catch {
-    return json;
+    return [...contact, json].join('\n');
   }
 }
 
