@@ -4,7 +4,6 @@ export const BASE = {
   phone: '(940) 350-9142',
   email: 'onyekwereudoai@gmail.com',
   linkedinUrl: 'https://linkedin.com/in/udoonyekwere',
-  linkedinLabel: 'LinkedIn',
   skills: [
     { cat: 'AI &amp; Automation', items: 'OpenAI, Claude, Claude Code, LangChain, MCPs, AI Agents, Retrieval-Augmented Generation (RAG), Prompt Engineering, Custom Workflow Automation' },
     { cat: 'Automation Platforms', items: 'React, Next.js, TypeScript, Redux, Tailwind CSS, Bootstrap, Responsive Web Design' },
@@ -88,6 +87,11 @@ export const BASE = {
 };
 
 export interface TailoredJob {
+  name: string;
+  location: string;
+  phone: string;
+  email: string;
+  linkedinUrl: string;
   subtitle: string;
   summary: string;
   utg_title: string;
@@ -187,9 +191,9 @@ export function buildHTML(job: TailoredJob, style: ResumeStyle = DEFAULT_STYLE):
 <html lang="en">
 <head><meta charset="UTF-8"><style>${buildCSS(style)}</style></head>
 <body>
-<div class="name">${BASE.name}</div>
+<div class="name">${job.name}</div>
 <div class="subtitle">${job.subtitle}</div>
-<div class="contact">${BASE.location} &nbsp;|&nbsp; ${BASE.phone} &nbsp;|&nbsp; ${BASE.email} &nbsp;|&nbsp; <a href="${BASE.linkedinUrl}">${BASE.linkedinLabel}</a></div>
+<div class="contact">${job.location} &nbsp;|&nbsp; ${job.phone} &nbsp;|&nbsp; ${job.email} &nbsp;|&nbsp; <a href="${job.linkedinUrl}">LinkedIn</a></div>
 <div class="section-header">Professional Summary</div>
 <p class="summary">${job.summary}</p>
 <div class="section-header">Technical Skills</div>

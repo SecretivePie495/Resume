@@ -5,7 +5,7 @@ import { getAuthUserId } from '@/lib/auth';
 import { BASE, TailoredJob } from '@/lib/resume';
 
 function resumeToText(json: string): string {
-  const contact = [
+  const fallbackContact = [
     `Name: ${BASE.name}`,
     `Location: ${BASE.location}`,
     `Phone: ${BASE.phone}`,
@@ -13,6 +13,12 @@ function resumeToText(json: string): string {
   ];
   try {
     const r = JSON.parse(json) as TailoredJob;
+    const contact = [
+      `Name: ${r.name ?? BASE.name}`,
+      `Location: ${r.location ?? BASE.location}`,
+      `Phone: ${r.phone ?? BASE.phone}`,
+      `Email: ${r.email ?? BASE.email}`,
+    ];
     return [
       ...contact,
       r.subtitle,
@@ -21,7 +27,7 @@ function resumeToText(json: string): string {
       ...r.utg_bullets,
     ].join('\n');
   } catch {
-    return [...contact, json].join('\n');
+    return [...fallbackContact, json].join('\n');
   }
 }
 

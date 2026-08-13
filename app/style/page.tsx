@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { BASE, DEFAULT_STYLE, FONT_OPTIONS, ResumeStyle, TailoredJob, buildHTML } from '@/lib/resume';
 
 const SAMPLE_JOB: TailoredJob = {
+  name: BASE.name,
+  location: BASE.location,
+  phone: BASE.phone,
+  email: BASE.email,
+  linkedinUrl: BASE.linkedinUrl,
   subtitle: 'AI Engineer | Full Stack Software Engineer',
   summary: 'AI-focused full stack engineer with proven expertise architecting and deploying enterprise AI automation platforms serving Fortune 500 clients. Specialized in building production-grade agentic workflows using OpenAI and Claude, designing scalable backend microservices with REST APIs, and implementing secure cloud infrastructure on Microsoft Azure.',
   utg_title: BASE.utg.title,

@@ -6,6 +6,11 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const TAILOR_SYSTEM = `You are a resume tailoring assistant. Given a candidate's base resume data and a job description, output a JSON object with tailored content. Return ONLY valid JSON, no markdown, no explanation.
 
 The JSON must have exactly these fields:
+- name: string (candidate's full name, exactly as it appears in the resume data provided)
+- location: string (candidate's city/state as it appears in the resume data, e.g. "Denton, TX")
+- phone: string (candidate's phone number exactly as it appears in the resume data)
+- email: string (candidate's email address exactly as it appears in the resume data)
+- linkedinUrl: string (candidate's full LinkedIn profile URL; if the resume data only has a handle, construct it as https://linkedin.com/in/&lt;handle&gt;)
 - subtitle: string (one-line role headline, two role descriptors separated by " | ", e.g. "AI Solutions Engineer | Software Engineer", use &amp; for ampersand)
 - summary: string (3-4 sentence professional summary tailored to the JD, use &mdash; for em-dashes, &amp; for ampersands)
 - utg_title: string (a lightly reworded version of the candidate's real UTG Media title, "Founder & Lead Software Engineer", emphasizing whichever part is most relevant to the JD — do not invent a different job title, use &amp; for ampersand)
@@ -102,7 +107,19 @@ export async function tailorResume(company?: string, jobTitle?: string, jd?: str
 
   const raw = (response.content[0] as { text: string }).text.trim()
     .replace(/^```json\s*/i, '').replace(/```\s*$/, '');
-  return JSON.parse(raw) as TailoredJob;
+  const parsed = JSON.parse(raw) as TailoredJob;
+
+  if (!userResume) {
+    return {
+      ...parsed,
+      name: BASE.name,
+      location: BASE.location,
+      phone: BASE.phone,
+      email: BASE.email,
+      linkedinUrl: BASE.linkedinUrl,
+    };
+  }
+  return parsed;
 }
 
 export async function answerInterviewQuestion(
