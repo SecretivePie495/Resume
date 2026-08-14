@@ -96,6 +96,9 @@ export interface TailoredJob {
   summary: string;
   utg_title: string;
   utg_bullets: string[];
+  aafes_bullets?: string[];
+  purvis_bullets?: string[];
+  skills_order?: string[];
 }
 
 export interface ResumeStyle {
@@ -183,9 +186,17 @@ function projectBlock(title: string, bullets: string[]): string {
 }
 
 export function buildHTML(job: TailoredJob, style: ResumeStyle = DEFAULT_STYLE): string {
-  const skillsHtml = BASE.skills.map(s => `<p class="skill-line"><strong>${s.cat}:</strong> ${s.items}</p>`).join('\n');
+  const orderedSkills = job.skills_order && job.skills_order.length === BASE.skills.length
+    ? job.skills_order
+        .map(cat => BASE.skills.find(s => s.cat === cat))
+        .filter((s): s is (typeof BASE.skills)[number] => !!s)
+    : BASE.skills;
+  const skillsHtml = (orderedSkills.length === BASE.skills.length ? orderedSkills : BASE.skills)
+    .map(s => `<p class="skill-line"><strong>${s.cat}:</strong> ${s.items}</p>`).join('\n');
   const edu = BASE.education;
   const projectsHtml = BASE.projects.map(p => projectBlock(p.title, p.bullets)).join('\n');
+  const aafesBullets = job.aafes_bullets?.length ? job.aafes_bullets : BASE.aafes.bullets;
+  const purvisBullets = job.purvis_bullets?.length ? job.purvis_bullets : BASE.purvis.bullets;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -200,8 +211,8 @@ export function buildHTML(job: TailoredJob, style: ResumeStyle = DEFAULT_STYLE):
 ${skillsHtml}
 <div class="section-header">Experience</div>
 ${jobBlock(BASE.utg.company, job.utg_title, BASE.utg.dates, job.utg_bullets)}
-${jobBlock(BASE.aafes.company, BASE.aafes.title, BASE.aafes.dates, BASE.aafes.bullets)}
-${jobBlock(BASE.purvis.company, BASE.purvis.title, BASE.purvis.dates, BASE.purvis.bullets)}
+${jobBlock(BASE.aafes.company, BASE.aafes.title, BASE.aafes.dates, aafesBullets)}
+${jobBlock(BASE.purvis.company, BASE.purvis.title, BASE.purvis.dates, purvisBullets)}
 ${jobBlock(BASE.uttyler_it.company, BASE.uttyler_it.title, BASE.uttyler_it.dates, BASE.uttyler_it.bullets)}
 <div class="section-header">Education</div>
 <div class="job-header"><b>${edu.degree} &mdash; ${edu.school}</b><span class="job-date">${edu.dates}</span></div>

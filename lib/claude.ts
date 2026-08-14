@@ -14,7 +14,10 @@ The JSON must have exactly these fields:
 - subtitle: string (one-line role headline, two role descriptors separated by " | ", e.g. "AI Solutions Engineer | Software Engineer", use &amp; for ampersand)
 - summary: string (3-4 sentence professional summary tailored to the JD, use &mdash; for em-dashes, &amp; for ampersands)
 - utg_title: string (a lightly reworded version of the candidate's real UTG Media title, "Founder & Lead Software Engineer", emphasizing whichever part is most relevant to the JD — do not invent a different job title, use &amp; for ampersand)
-- utg_bullets: array of 5-6 bullet strings — select and lightly rephrase from the candidate's REAL UTG Media bullets (given in BASE RESUME DATA under utg.bullets) to emphasize what's most relevant to the JD. Do not invent achievements not grounded in those real bullets. (use &mdash; for em-dashes, &amp; for ampersands)`;
+- utg_bullets: array of 5-6 bullet strings — select and lightly rephrase from the candidate's REAL UTG Media bullets (given under FIXED RESUME SECTIONS as utg bullets) to emphasize what's most relevant to the JD. Do not invent achievements not grounded in those real bullets. (use &mdash; for em-dashes, &amp; for ampersands)
+- aafes_bullets: array of 4-5 bullet strings — select and lightly rephrase from the REAL AAFES bullets (given under FIXED RESUME SECTIONS as aafes bullets) to emphasize what's most relevant to the JD. Do not invent achievements not grounded in those real bullets. (use &mdash; for em-dashes, &amp; for ampersands)
+- purvis_bullets: array of 4-5 bullet strings — select and lightly rephrase from the REAL Purvis Industries bullets (given under FIXED RESUME SECTIONS as purvis bullets) to emphasize what's most relevant to the JD. Do not invent achievements not grounded in those real bullets. (use &mdash; for em-dashes, &amp; for ampersands)
+- skills_order: array of strings — the exact skill category names given under FIXED RESUME SECTIONS as skill categories, reordered so the categories most relevant to the JD come first. Must include every given category exactly once, using the exact strings provided (do not reword, add, or remove any).`;
 
 const COVER_LETTER_SYSTEM = `You are a professional cover letter writer. Write a formal business-style cover letter using the exact structure below. Use plain text only — no markdown, no bullet points, no asterisks.
 
@@ -88,18 +91,25 @@ export async function tailorResume(company?: string, jobTitle?: string, jd?: str
     ? `CANDIDATE'S RESUME (plain text):\n${userResume}`
     : `BASE RESUME DATA:\n${JSON.stringify(BASE, null, 2)}`;
 
+  const fixedSections = `FIXED RESUME SECTIONS (always sourced from here, regardless of the resume text above — select/reorder only, never invent):
+utg bullets: ${JSON.stringify(BASE.utg.bullets)}
+aafes bullets: ${JSON.stringify(BASE.aafes.bullets)}
+purvis bullets: ${JSON.stringify(BASE.purvis.bullets)}
+skill categories: ${JSON.stringify(BASE.skills.map(s => s.cat))}`;
+
   const jobContext = company || jobTitle || jd
     ? `JOB: ${jobTitle ?? 'Not specified'} at ${company ?? 'Not specified'}\n\nJOB DESCRIPTION:\n${jd ?? 'Not provided'}`
     : 'No specific job target provided. Generate a strong general-purpose resume.';
 
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1500,
+    max_tokens: 1800,
     system: [{ type: 'text', text: TAILOR_SYSTEM, cache_control: { type: 'ephemeral' } }],
     messages: [{
       role: 'user',
       content: [
         { type: 'text', text: baseContent, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: fixedSections, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: jobContext },
       ],
     }],
