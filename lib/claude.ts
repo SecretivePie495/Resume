@@ -53,6 +53,18 @@ STRUCTURE (output each section separated by a blank line):
 
 Extract the candidate's name, address, phone, and email from the raw resume text provided. If any field is missing from the resume, omit that line rather than inserting a placeholder.`;
 
+const VIDEO_SCRIPT_SYSTEM = `You are writing a spoken video script for a candidate to read aloud on camera as part of a job application (like a Loom intro video). Output plain text only — no markdown, no stage directions, no bracketed notes like [pause] or [smile], no headers. Just the words the candidate will say, exactly as they'll say them.
+
+Target length: 150-220 words (roughly 60-90 seconds spoken aloud).
+
+Structure (do not label these sections in the output, just flow naturally between them):
+1. Open with the candidate's name and the specific role/company, plus a hook — the single most relevant thing about them for this JD.
+2. Cover 2-3 concrete achievements grounded in the candidate's real resume content that map directly to what the JD is asking for. Use specifics (numbers, technologies, outcomes), not generic claims.
+3. Briefly say why this specific role or company is a fit, if the JD gives enough to work with — otherwise skip this rather than inventing generic enthusiasm.
+4. Close with a short, natural call to action (e.g. wanting to talk more, being excited about the opportunity).
+
+Voice: first person, conversational and natural like a real person talking, not a formal cover letter read aloud. Contractions are fine. Short sentences. No corporate jargon stacking (avoid words like "leverage," "synergy," "spearhead"). Do not invent achievements, numbers, or experience not grounded in the candidate's resume data provided.`;
+
 export interface ResumeAnalysis {
   skills: string[];
   country: string;
