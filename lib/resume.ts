@@ -4,8 +4,10 @@ export const BASE = {
   phone: '(940) 350-9142',
   email: 'onyekwereudoai@gmail.com',
   linkedinUrl: 'https://linkedin.com/in/udoonyekwere',
+  githubUrl: 'https://github.com/SecretivePie495',
   skills: [
-    { cat: 'AI &amp; Automation', items: 'OpenAI, Claude, Claude Code, LangChain, MCPs, AI Agents, Retrieval-Augmented Generation (RAG), Prompt Engineering, Custom Workflow Automation' },
+    { cat: 'AI &amp; Automation', items: 'OpenAI, Claude, Claude Code, LangChain, MCPs, AI Agents, Retrieval-Augmented Generation (RAG), Prompt Engineering, Context Engineering, Custom Workflow Automation' },
+    { cat: 'AI Fundamentals', items: 'Transformer Architecture, Neural Network Fundamentals, Agentic Loops &amp; Tool-Use Patterns, Context Window Management, Model Capability/Limitation Analysis' },
     { cat: 'Automation Platforms', items: 'React, Next.js, TypeScript, Redux, Tailwind CSS, Bootstrap, Responsive Web Design' },
     { cat: 'Enterprise Systems &amp; Integration', items: 'Node.js, Express.js, FastAPI, Microservices, REST APIs, Webhooks' },
     { cat: 'Automation &amp; Integration', items: 'Make, Zapier, n8n, Airtable Automations, ServiceNow, Slack, HubSpot, Microsoft Teams' },
@@ -20,6 +22,7 @@ export const BASE = {
     dates: 'Jan 2023 &ndash; Present',
     title: 'Founder &amp; Lead Software Engineer',
     bullets: [
+      'Use Claude Code as primary development environment to design, build, and ship full-stack AI applications (React/Next.js, FastAPI, PostgreSQL) from scratch to production in days rather than weeks, including agent orchestration, RAG pipelines, and CI/CD deployment to Azure.',
       'Founded and run an AI consultancy designing and implementing custom AI automation systems for clients, using React, Next.js, TypeScript, Python, FastAPI, PostgreSQL, and Microsoft Azure to automate business workflows, AI-assisted decision making, document processing, CRM operations, and customer engagement.',
       'Design and implement AI automation workflows for client engagements, integrating OpenAI, Claude, LangChain, Make, Zapier, n8n, Airtable, HubSpot, Slack, and REST APIs to orchestrate multi-step business processes and reduce manual effort.',
       'Build AI agents powered by Retrieval-Augmented Generation (RAG), vector embeddings, semantic search, prompt orchestration, and contextual memory for clients needing automated document analysis, knowledge retrieval, customer support, and content generation.',
@@ -204,7 +207,7 @@ export function buildHTML(job: TailoredJob, style: ResumeStyle = DEFAULT_STYLE):
 <body>
 <div class="name">${job.name}</div>
 <div class="subtitle">${job.subtitle}</div>
-<div class="contact">${job.location} &nbsp;|&nbsp; ${job.phone} &nbsp;|&nbsp; ${job.email} &nbsp;|&nbsp; <a href="${job.linkedinUrl}">LinkedIn</a></div>
+<div class="contact">${job.location} &nbsp;|&nbsp; ${job.phone} &nbsp;|&nbsp; ${job.email} &nbsp;|&nbsp; <a href="${job.linkedinUrl}">LinkedIn</a> &nbsp;|&nbsp; <a href="${BASE.githubUrl}">GitHub</a></div>
 <div class="section-header">Professional Summary</div>
 <p class="summary">${job.summary}</p>
 <div class="section-header">Technical Skills</div>
