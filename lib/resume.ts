@@ -2,7 +2,7 @@ export const BASE = {
   name: 'Udo Onyekwere',
   location: 'Denton, TX',
   phone: '(940) 350-9142',
-  email: 'onyekwereudoai@gmail.com',
+  email: 'udo.onyekwere.resume@gmail.com',
   linkedinUrl: 'https://linkedin.com/in/udoonyekwere',
   githubUrl: 'https://github.com/SecretivePie495',
   skills: [
