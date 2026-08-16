@@ -1,10 +1,64 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Application, ApplicationStatus } from '@/lib/db';
 
 const STATUSES: ApplicationStatus[] = ['generated', 'not_applied', 'applied', 'interviewing', 'offer', 'rejected'];
+
+type ScriptSection = { key: string; content: string };
+
+const SCRIPT_SECTION_ORDER = [
+  'OPENER', 'IF-NOT-RIGHT-PERSON', 'SITUATION QUESTIONS', 'PROBLEM QUESTIONS',
+  'CONSEQUENCE QUESTION', 'TRANSITION', 'CLOSE', 'OBJECTIONS', 'VOICEMAIL',
+];
+const SCRIPT_LEFT_KEYS = new Set(['OPENER', 'IF-NOT-RIGHT-PERSON', 'OBJECTIONS', 'VOICEMAIL']);
+const SCRIPT_LABELS: Record<string, string> = {
+  'OPENER': 'Opener',
+  'IF-NOT-RIGHT-PERSON': 'If Not The Right Person',
+  'SITUATION QUESTIONS': 'Situation Questions',
+  'PROBLEM QUESTIONS': 'Problem Questions',
+  'CONSEQUENCE QUESTION': 'Consequence Question',
+  'TRANSITION': 'Transition',
+  'CLOSE': 'Close',
+  'OBJECTIONS': 'Objections',
+  'VOICEMAIL': 'Voicemail',
+};
+
+function parseScript(text: string): ScriptSection[] {
+  if (!text) return [];
+  const pattern = SCRIPT_SECTION_ORDER.map(h => h.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
+  const headerRegex = new RegExp(`^(${pattern})$`, 'gm');
+  const matches = [...text.matchAll(headerRegex)];
+  if (matches.length === 0) return [{ key: 'SCRIPT', content: text }];
+  return matches.map((m, i) => {
+    const start = m.index! + m[0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index! : text.length;
+    return { key: m[0], content: text.slice(start, end).trim() };
+  });
+}
+
+function buildScript(sections: ScriptSection[]): string {
+  return sections.map(s => `${s.key}\n\n${s.content}`).join('\n\n');
+}
+
+function ScriptBox({ section, onSave }: { section: ScriptSection; onSave: (key: string, text: string) => void }) {
+  return (
+    <div className="bg-zinc-950/40 border border-zinc-800 rounded-lg p-3">
+      <div className="text-[11px] uppercase tracking-wide text-zinc-500 font-semibold mb-1.5">
+        {SCRIPT_LABELS[section.key] ?? section.key}
+      </div>
+      <div
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={e => onSave(section.key, e.currentTarget.innerText)}
+        className="text-[13px] text-zinc-200 whitespace-pre-wrap leading-snug font-mono outline-none focus:bg-zinc-900/60 rounded px-1 -mx-1"
+      >
+        {section.content}
+      </div>
+    </div>
+  );
+}
 
 export default function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -17,6 +71,8 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
   const [notes, setNotes] = useState('');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'resume' | 'cover' | 'script'>('resume');
+
+  const sections = useMemo(() => parseScript(app?.call_script ?? ''), [app?.call_script]);
 
   useEffect(() => {
     fetch(`/api/applications?id=${id}`)
@@ -90,6 +146,15 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
     setScriptSaving(false);
   }
 
+  function handleSectionBlur(key: string, text: string) {
+    if (!app) return;
+    const updated = sections.map(s => (s.key === key ? { ...s, content: text } : s));
+    const fullText = buildScript(updated);
+    if (fullText === app.call_script) return;
+    setApp({ ...app, call_script: fullText });
+    saveCallScript(fullText);
+  }
+
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -122,24 +187,68 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
         <span className="text-zinc-300 text-sm">{app.company} — {app.job_title}</span>
       </div>
 
+      <div className="flex gap-2 border-b border-zinc-800 pb-0">
+        {(['resume', 'cover', 'script'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+              activeTab === tab
+                ? 'text-white border-blue-500'
+                : 'text-zinc-400 border-transparent hover:text-zinc-200'
+            }`}
+          >
+            {tab === 'cover' ? 'Cover Letter' : tab === 'script' ? 'Call Script' : 'Resume'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'script' ? (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+            <span className="text-xs text-zinc-400 font-medium">
+              Cold-Call Script {scriptSaving && <span className="text-zinc-600">· saving...</span>}
+            </span>
+            {app.call_script && (
+              <button
+                onClick={() => copyToClipboard(app.call_script!)}
+                className="text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded-md transition-colors"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            )}
+          </div>
+          {app.call_script ? (
+            <div className="grid grid-cols-2 gap-4 p-4">
+              <div className="space-y-3">
+                <div className="text-[11px] uppercase tracking-wide text-zinc-600 font-semibold px-1">Quick Reference</div>
+                {sections.filter(s => SCRIPT_LEFT_KEYS.has(s.key)).map(s => (
+                  <ScriptBox key={s.key} section={s} onSave={handleSectionBlur} />
+                ))}
+              </div>
+              <div className="space-y-3">
+                <div className="text-[11px] uppercase tracking-wide text-zinc-600 font-semibold px-1">Call Flow</div>
+                {sections.filter(s => !SCRIPT_LEFT_KEYS.has(s.key)).map(s => (
+                  <ScriptBox key={s.key} section={s} onSave={handleSectionBlur} />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 flex flex-col items-center gap-4 text-zinc-400">
+              <p className="text-sm">No call script yet.</p>
+              <button
+                onClick={generateCallScript}
+                disabled={scriptLoading}
+                className="bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-400 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+              >
+                {scriptLoading ? 'Generating...' : 'Generate Call Script'}
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-4">
-          <div className="flex gap-2 border-b border-zinc-800 pb-0">
-            {(['resume', 'cover', 'script'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-                  activeTab === tab
-                    ? 'text-white border-blue-500'
-                    : 'text-zinc-400 border-transparent hover:text-zinc-200'
-                }`}
-              >
-                {tab === 'cover' ? 'Cover Letter' : tab === 'script' ? 'Call Script' : 'Resume'}
-              </button>
-            ))}
-          </div>
-
           {activeTab === 'resume' && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
               <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
@@ -205,43 +314,6 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
             </div>
           )}
 
-          {activeTab === 'script' && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
-                <span className="text-xs text-zinc-400 font-medium">
-                  Cold-Call Script {scriptSaving && <span className="text-zinc-600">· saving...</span>}
-                </span>
-                {app.call_script && (
-                  <button
-                    onClick={() => copyToClipboard(app.call_script!)}
-                    className="text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded-md transition-colors"
-                  >
-                    {copied ? 'Copied!' : 'Copy'}
-                  </button>
-                )}
-              </div>
-              {app.call_script ? (
-                <textarea
-                  value={app.call_script}
-                  onChange={e => setApp({ ...app, call_script: e.target.value })}
-                  onBlur={e => saveCallScript(e.target.value)}
-                  rows={24}
-                  className="w-full p-6 bg-transparent text-zinc-200 text-sm leading-relaxed font-mono resize-y focus:outline-none focus:bg-zinc-950/50"
-                />
-              ) : (
-                <div className="p-8 flex flex-col items-center gap-4 text-zinc-400">
-                  <p className="text-sm">No call script yet.</p>
-                  <button
-                    onClick={generateCallScript}
-                    disabled={scriptLoading}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-400 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
-                  >
-                    {scriptLoading ? 'Generating...' : 'Generate Call Script'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="space-y-4">
@@ -333,6 +405,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
