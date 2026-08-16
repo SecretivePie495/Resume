@@ -67,9 +67,9 @@ Voice: first person, conversational and natural like a real person talking, not 
 
 const CALL_SCRIPT_SYSTEM = `You are writing a cold-call script for a job candidate to use when calling a company directly about a specific job opening — to reach a hiring manager (or whoever picks up) and introduce themselves as a candidate.
 
-The OPENER is fixed and provided to you separately — it already covers the greeting, the initial ask, the person's likely reply, and the redirect to find the right person. Do not write any of that. Start your output directly with TRANSITION.
+The OPENER and IF-ITS-THEM sections are fixed and provided to you separately — OPENER covers the greeting, the initial ask, the person's likely reply, and the redirect to find the right person; IF-ITS-THEM covers what to say if the person on the line turns out to be the hiring manager. Do not write either of those. Start your output directly with TRANSITION.
 
-Output plain text only — no markdown, no asterisks, no bracketed stage directions except literal [Name] placeholders. Use the exact section headers below in this order, each in ALL CAPS on its own line, followed by a blank line, then the content. Do not output OPENER, IF-NOT-RIGHT-PERSON, SITUATION QUESTIONS, PROBLEM QUESTIONS, or CONSEQUENCE QUESTION — those are not used.
+Output plain text only — no markdown, no asterisks, no bracketed stage directions except literal [Name] placeholders. Use the exact section headers below in this order, each in ALL CAPS on its own line, followed by a blank line, then the content. Do not output OPENER, IF-ITS-THEM, IF-NOT-RIGHT-PERSON, SITUATION QUESTIONS, PROBLEM QUESTIONS, or CONSEQUENCE QUESTION — those are not used.
 
 TRANSITION
 2-3 sentences pivoting directly from the opener into the candidate's real, relevant background — reference what the role appears to need based on the job description, and connect it to real experience/skills. This must be grounded ONLY in the actual resume content provided; do not invent achievements, technologies, or experience not present in the resume data given. If nothing in the resume clearly maps to the role, use the closest genuinely true match rather than fabricating a perfect fit.
@@ -104,6 +104,16 @@ function buildFixedOpener(jobTitle: string): string {
     `"I was trying to figure out who's actually overseeing the ${title} opening — specifically the person who'd know what the team really needs beyond what's written in the job description."`,
     '',
     '"Who would I need to talk to about that?"',
+  ].join('\n');
+}
+
+function buildFixedIfItsThem(): string {
+  return [
+    'IF-ITS-THEM',
+    '',
+    "Oh, that's actually you then — would it be alright if I carved out 10 or 15 minutes with you at some point to talk through the role?",
+    '',
+    'If they say yes, lock a specific window instead of leaving it open-ended: "Would tomorrow afternoon or Thursday work better?"',
   ].join('\n');
 }
 
@@ -234,7 +244,7 @@ export async function generateCallScript(
   });
 
   const rest = (response.content[0] as { text: string }).text.trim();
-  return `${buildFixedOpener(jobTitle)}\n\n${rest}`;
+  return `${buildFixedOpener(jobTitle)}\n\n${buildFixedIfItsThem()}\n\n${rest}`;
 }
 
 export async function generateCoverLetter(

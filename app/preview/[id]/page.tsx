@@ -9,12 +9,13 @@ const STATUSES: ApplicationStatus[] = ['generated', 'not_applied', 'applied', 'i
 type ScriptSection = { key: string; content: string };
 
 const SCRIPT_SECTION_ORDER = [
-  'OPENER', 'IF-NOT-RIGHT-PERSON', 'SITUATION QUESTIONS', 'PROBLEM QUESTIONS',
+  'OPENER', 'IF-ITS-THEM', 'IF-NOT-RIGHT-PERSON', 'SITUATION QUESTIONS', 'PROBLEM QUESTIONS',
   'CONSEQUENCE QUESTION', 'TRANSITION', 'CLOSE', 'OBJECTIONS', 'VOICEMAIL',
 ];
 const SCRIPT_LEFT_KEYS = new Set(['OPENER', 'IF-NOT-RIGHT-PERSON', 'OBJECTIONS', 'VOICEMAIL']);
 const SCRIPT_LABELS: Record<string, string> = {
   'OPENER': 'Opener',
+  'IF-ITS-THEM': "If It's Them",
   'IF-NOT-RIGHT-PERSON': 'If Not The Right Person',
   'SITUATION QUESTIONS': 'Situation Questions',
   'PROBLEM QUESTIONS': 'Problem Questions',
