@@ -62,3 +62,20 @@ export async function POST(req: NextRequest) {
   await queries.updateCallScript(callScript, id);
   return NextResponse.json({ call_script: callScript });
 }
+
+export async function PATCH(req: NextRequest) {
+  const userId = await getAuthUserId();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { queries } = createDb(userId);
+
+  const { id, call_script } = await req.json();
+  if (!id || typeof call_script !== 'string') {
+    return NextResponse.json({ error: 'id and call_script required' }, { status: 400 });
+  }
+
+  const app = await queries.get(Number(id));
+  if (!app) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  await queries.updateCallScript(call_script, id);
+  return NextResponse.json({ ok: true });
+}

@@ -12,6 +12,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
   const [loading, setLoading] = useState(true);
   const [coverLoading, setCoverLoading] = useState(false);
   const [scriptLoading, setScriptLoading] = useState(false);
+  const [scriptSaving, setScriptSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [notes, setNotes] = useState('');
   const [copied, setCopied] = useState(false);
@@ -76,6 +77,17 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
     setApp({ ...app, call_script: data.call_script });
     setActiveTab('script');
     setScriptLoading(false);
+  }
+
+  async function saveCallScript(text: string) {
+    if (!app) return;
+    setScriptSaving(true);
+    await fetch('/api/call-script', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: app.id, call_script: text }),
+    });
+    setScriptSaving(false);
   }
 
   function copyToClipboard(text: string) {
@@ -196,7 +208,9 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
           {activeTab === 'script' && (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
               <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
-                <span className="text-xs text-zinc-400 font-medium">Cold-Call Script</span>
+                <span className="text-xs text-zinc-400 font-medium">
+                  Cold-Call Script {scriptSaving && <span className="text-zinc-600">· saving...</span>}
+                </span>
                 {app.call_script && (
                   <button
                     onClick={() => copyToClipboard(app.call_script!)}
@@ -207,9 +221,13 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                 )}
               </div>
               {app.call_script ? (
-                <div className="p-6 text-zinc-200 text-sm whitespace-pre-wrap leading-relaxed font-mono">
-                  {app.call_script}
-                </div>
+                <textarea
+                  value={app.call_script}
+                  onChange={e => setApp({ ...app, call_script: e.target.value })}
+                  onBlur={e => saveCallScript(e.target.value)}
+                  rows={24}
+                  className="w-full p-6 bg-transparent text-zinc-200 text-sm leading-relaxed font-mono resize-y focus:outline-none focus:bg-zinc-950/50"
+                />
               ) : (
                 <div className="p-8 flex flex-col items-center gap-4 text-zinc-400">
                   <p className="text-sm">No call script yet.</p>
