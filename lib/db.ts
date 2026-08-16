@@ -25,6 +25,7 @@ export async function initDb() {
       resume_json     TEXT,
       resume_html     TEXT,
       cover_letter    TEXT,
+      call_script     TEXT,
       ats_score       INTEGER,
       ats_keywords    TEXT,
       url             TEXT,
@@ -47,6 +48,7 @@ export async function initDb() {
     )`;
 
   await sql`ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS email TEXT`;
+  await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS call_script TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS base_resume (
@@ -140,6 +142,7 @@ export interface Application {
   resume_json: string | null;
   resume_html: string | null;
   cover_letter: string | null;
+  call_script: string | null;
   ats_score: number | null;
   ats_keywords: string | null;
   url: string | null;
@@ -234,6 +237,10 @@ export function createDb(userId: string, userEmail?: string) {
 
     updateCoverLetter: (coverLetter: string, id: number) => sql`
       UPDATE applications SET cover_letter = ${coverLetter}, updated_at = NOW()
+      WHERE id = ${id} AND user_id = ${uid}`,
+
+    updateCallScript: (callScript: string, id: number) => sql`
+      UPDATE applications SET call_script = ${callScript}, updated_at = NOW()
       WHERE id = ${id} AND user_id = ${uid}`,
 
     delete: (id: number) => sql`DELETE FROM applications WHERE id = ${id} AND user_id = ${uid}`,

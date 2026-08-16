@@ -11,10 +11,11 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
   const [app, setApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [coverLoading, setCoverLoading] = useState(false);
+  const [scriptLoading, setScriptLoading] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [notes, setNotes] = useState('');
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'resume' | 'cover'>('resume');
+  const [activeTab, setActiveTab] = useState<'resume' | 'cover' | 'script'>('resume');
 
   useEffect(() => {
     fetch(`/api/applications?id=${id}`)
@@ -63,6 +64,20 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
     setCoverLoading(false);
   }
 
+  async function generateCallScript() {
+    if (!app) return;
+    setScriptLoading(true);
+    const res = await fetch('/api/call-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: app.id }),
+    });
+    const data = await res.json();
+    setApp({ ...app, call_script: data.call_script });
+    setActiveTab('script');
+    setScriptLoading(false);
+  }
+
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -98,7 +113,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-4">
           <div className="flex gap-2 border-b border-zinc-800 pb-0">
-            {(['resume', 'cover'] as const).map(tab => (
+            {(['resume', 'cover', 'script'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -108,7 +123,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                     : 'text-zinc-400 border-transparent hover:text-zinc-200'
                 }`}
               >
-                {tab === 'cover' ? 'Cover Letter' : 'Resume'}
+                {tab === 'cover' ? 'Cover Letter' : tab === 'script' ? 'Call Script' : 'Resume'}
               </button>
             ))}
           </div>
@@ -177,6 +192,38 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
               )}
             </div>
           )}
+
+          {activeTab === 'script' && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                <span className="text-xs text-zinc-400 font-medium">Cold-Call Script</span>
+                {app.call_script && (
+                  <button
+                    onClick={() => copyToClipboard(app.call_script!)}
+                    className="text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded-md transition-colors"
+                  >
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                )}
+              </div>
+              {app.call_script ? (
+                <div className="p-6 text-zinc-200 text-sm whitespace-pre-wrap leading-relaxed font-mono">
+                  {app.call_script}
+                </div>
+              ) : (
+                <div className="p-8 flex flex-col items-center gap-4 text-zinc-400">
+                  <p className="text-sm">No call script yet.</p>
+                  <button
+                    onClick={generateCallScript}
+                    disabled={scriptLoading}
+                    className="bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-400 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+                  >
+                    {scriptLoading ? 'Generating...' : 'Generate Call Script'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -218,6 +265,16 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
               className="w-full bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-200 text-sm font-medium py-2.5 rounded-lg transition-colors"
             >
               {coverLoading ? 'Generating cover letter...' : '+ Generate Cover Letter'}
+            </button>
+          )}
+
+          {!app.call_script && (
+            <button
+              onClick={generateCallScript}
+              disabled={scriptLoading}
+              className="w-full bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-200 text-sm font-medium py-2.5 rounded-lg transition-colors"
+            >
+              {scriptLoading ? 'Generating call script...' : '+ Generate Call Script'}
             </button>
           )}
 

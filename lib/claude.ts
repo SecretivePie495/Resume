@@ -65,6 +65,37 @@ Structure (do not label these sections in the output, just flow naturally betwee
 
 Voice: first person, conversational and natural like a real person talking, not a formal cover letter read aloud. Contractions are fine. Short sentences. No corporate jargon stacking (avoid words like "leverage," "synergy," "spearhead"). Do not invent achievements, numbers, or experience not grounded in the candidate's resume data provided.`;
 
+const CALL_SCRIPT_SYSTEM = `You are writing a cold-call script for a job candidate to use when calling a company directly about a specific job opening — to reach a hiring manager (or whoever picks up) and introduce themselves as a candidate. Use a curiosity-based, question-led approach (NEPQ style): don't pitch first. Ask questions that let the person state their own hiring pain in their own words, then pivot to the candidate's real, relevant background.
+
+Output plain text only — no markdown, no asterisks, no bracketed stage directions except literal [Name] placeholders. Use the exact section headers below in this order, each in ALL CAPS on its own line, followed by a blank line, then the content.
+
+OPENER
+A short, natural phone opener: greeting + candidate's name ("Hey, this is [Candidate Name]") + a specific, TRUE reference pulled from the job description (a real technology, responsibility, or project actually mentioned in it — never invent a detail that isn't in the JD provided; if the JD is thin, fall back to a plain, honest reference to the role title/company instead of inventing specifics) + a low-pressure permission ask to keep talking, e.g. "would you mind if I asked a couple quick questions about it?"
+
+IF-NOT-RIGHT-PERSON
+One line to use if the person seems unsure they're the hiring manager, or the candidate wants to check: acknowledge that gently, and ask who's responsible for hiring for this specific role.
+
+SITUATION QUESTIONS
+2-3 short, open-ended questions about the current state of hiring for this role — how long it's been open, how the team is covering the gap. No pitching yet.
+
+PROBLEM QUESTIONS
+2 short questions that let the hiring manager state their own pain point in filling the role — what's been hard about finding the right fit, or the biggest gap between applicants so far and what they actually need.
+
+CONSEQUENCE QUESTION
+1 question that gets them to state, in their own words, the cost or impact of the role staying open.
+
+TRANSITION
+2-3 sentences pivoting from whatever pain they just stated directly to the candidate's real, relevant background. This must be grounded ONLY in the actual resume content provided — select and lightly reference real experience/skills that map to what they just described needing. Do not invent achievements, technologies, or experience not present in the resume data given. If nothing in the resume clearly maps to what they described, use the closest genuinely true match rather than fabricating a perfect fit.
+
+CLOSE
+1-2 sentences asking for a concrete next step: send the resume directly, or set up a short call.
+
+OBJECTIONS
+4-6 lines, each formatted exactly as "THEY SAY: ... / YOU SAY: ..." — the most likely pushback on a cold call about a job opening (e.g. using a recruiter/agency, "apply through our careers page," already in final rounds, "just email it to me," no time right now). Each YOU SAY response should redirect gracefully, never argue, and never claim anything false.
+
+VOICEMAIL
+A short fallback script (2-3 sentences) to leave if the call goes to voicemail, referencing the same specific job detail used in the opener.`;
+
 export interface ResumeAnalysis {
   skills: string[];
   country: string;
@@ -164,6 +195,30 @@ export async function answerInterviewQuestion(
         { type: 'text', text: `RESUME:\n${resumeText.slice(0, 4000)}`, cache_control: { type: 'ephemeral' } },
         { type: 'text', text: `${jobContext}\n\nINTERVIEW QUESTION:\n${question}` },
       ],
+    }],
+  });
+
+  return (response.content[0] as { text: string }).text.trim();
+}
+
+export async function generateCallScript(
+  company: string,
+  jobTitle: string,
+  jd: string,
+  resumeJson: string,
+  rawResume?: string,
+): Promise<string> {
+  const candidateSection = rawResume
+    ? `RAW RESUME (ground truth for real experience/skills):\n${rawResume}\n\nTAILORED RESUME HIGHLIGHTS:\n${resumeJson}`
+    : `CANDIDATE RESUME:\n${resumeJson}`;
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 900,
+    system: [{ type: 'text', text: CALL_SCRIPT_SYSTEM, cache_control: { type: 'ephemeral' } }],
+    messages: [{
+      role: 'user',
+      content: `CANDIDATE NAME: ${BASE.name}\n\n${candidateSection}\n\nJOB: ${jobTitle} at ${company}\n\nJOB DESCRIPTION:\n${jd}`,
     }],
   });
 
