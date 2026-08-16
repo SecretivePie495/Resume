@@ -67,12 +67,9 @@ Voice: first person, conversational and natural like a real person talking, not 
 
 const CALL_SCRIPT_SYSTEM = `You are writing a cold-call script for a job candidate to use when calling a company directly about a specific job opening — to reach a hiring manager (or whoever picks up) and introduce themselves as a candidate.
 
-The OPENER is fixed and provided to you separately — do not write one. Start your output directly with IF-NOT-RIGHT-PERSON.
+The OPENER is fixed and provided to you separately — it already covers the greeting, the initial ask, the person's likely reply, and the redirect to find the right person. Do not write any of that. Start your output directly with TRANSITION.
 
-Output plain text only — no markdown, no asterisks, no bracketed stage directions except literal [Name] placeholders. Use the exact section headers below in this order, each in ALL CAPS on its own line, followed by a blank line, then the content. Do not output OPENER, SITUATION QUESTIONS, PROBLEM QUESTIONS, or CONSEQUENCE QUESTION — those are not used.
-
-IF-NOT-RIGHT-PERSON
-One line to use if the person seems unsure they're the hiring manager, or the candidate wants to check: acknowledge that gently, and ask who's responsible for hiring for this specific role.
+Output plain text only — no markdown, no asterisks, no bracketed stage directions except literal [Name] placeholders. Use the exact section headers below in this order, each in ALL CAPS on its own line, followed by a blank line, then the content. Do not output OPENER, IF-NOT-RIGHT-PERSON, SITUATION QUESTIONS, PROBLEM QUESTIONS, or CONSEQUENCE QUESTION — those are not used.
 
 TRANSITION
 2-3 sentences pivoting directly from the opener into the candidate's real, relevant background — reference what the role appears to need based on the job description, and connect it to real experience/skills. This must be grounded ONLY in the actual resume content provided; do not invent achievements, technologies, or experience not present in the resume data given. If nothing in the resume clearly maps to the role, use the closest genuinely true match rather than fabricating a perfect fit.
@@ -91,8 +88,23 @@ function articleFor(word: string): string {
 }
 
 function buildFixedOpener(jobTitle: string): string {
-  const role = jobTitle?.trim() ? `${articleFor(jobTitle)} ${jobTitle.trim()}` : 'a';
-  return `OPENER\n\nHey [Name], it's Udo… uh, Udo Onyekwere.\n\nI was looking at ${role} role you guys are hiring for right now, and I was wondering if you could possibly.. help me out for a moment?`;
+  const title = jobTitle?.trim() || 'this role';
+  const roleWithArticle = jobTitle?.trim() ? `${articleFor(jobTitle)} ${jobTitle.trim()}` : 'a';
+  return [
+    'OPENER',
+    '',
+    "Hey [Name], it's Udo… uh, Udo Onyekwere.",
+    '',
+    `I was looking at ${roleWithArticle} role you guys are hiring for right now, and I was wondering if you could possibly.. help me out for a moment?`,
+    '',
+    'Them: "Sure, what\'s this about?" / "Who is this?"',
+    '',
+    'You: "Well, I\'m actually not sure if you\'re even the right person I should be talking to."',
+    '',
+    `"I was trying to figure out who's actually overseeing the ${title} opening — specifically the person who'd know what the team really needs beyond what's written in the job description."`,
+    '',
+    '"Who would I need to talk to about that?"',
+  ].join('\n');
 }
 
 export interface ResumeAnalysis {
