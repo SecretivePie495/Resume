@@ -44,15 +44,15 @@ function buildScript(sections: ScriptSection[]): string {
 
 function ScriptBox({ section, onSave }: { section: ScriptSection; onSave: (key: string, text: string) => void }) {
   return (
-    <div className="bg-zinc-950/40 border border-zinc-800 rounded-lg p-3">
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500 font-semibold mb-1.5">
+    <div className="bg-zinc-950 border border-zinc-700 rounded-lg p-3">
+      <div className="text-xs uppercase tracking-wide text-zinc-400 font-semibold mb-1.5">
         {SCRIPT_LABELS[section.key] ?? section.key}
       </div>
       <div
         contentEditable
         suppressContentEditableWarning
         onBlur={e => onSave(section.key, e.currentTarget.innerText)}
-        className="text-[13px] text-zinc-200 whitespace-pre-wrap leading-snug font-mono outline-none focus:bg-zinc-900/60 rounded px-1 -mx-1"
+        className="text-sm text-zinc-50 whitespace-pre-wrap leading-relaxed font-mono outline-none focus:bg-zinc-900 rounded px-1 -mx-1"
       >
         {section.content}
       </div>
@@ -221,13 +221,13 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
           {app.call_script ? (
             <div className="grid grid-cols-2 gap-4 p-4">
               <div className="space-y-3">
-                <div className="text-[11px] uppercase tracking-wide text-zinc-600 font-semibold px-1">Quick Reference</div>
+                <div className="text-xs uppercase tracking-wide text-zinc-300 font-semibold px-1">Quick Reference</div>
                 {sections.filter(s => SCRIPT_LEFT_KEYS.has(s.key)).map(s => (
                   <ScriptBox key={s.key} section={s} onSave={handleSectionBlur} />
                 ))}
               </div>
               <div className="space-y-3">
-                <div className="text-[11px] uppercase tracking-wide text-zinc-600 font-semibold px-1">Call Flow</div>
+                <div className="text-xs uppercase tracking-wide text-zinc-300 font-semibold px-1">Call Flow</div>
                 {sections.filter(s => !SCRIPT_LEFT_KEYS.has(s.key)).map(s => (
                   <ScriptBox key={s.key} section={s} onSave={handleSectionBlur} />
                 ))}
