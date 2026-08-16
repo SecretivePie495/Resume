@@ -42,11 +42,39 @@ function buildScript(sections: ScriptSection[]): string {
   return sections.map(s => `${s.key}\n\n${s.content}`).join('\n\n');
 }
 
-function ScriptBox({ section, onSave }: { section: ScriptSection; onSave: (key: string, text: string) => void }) {
+function ScriptBox({
+  section, onSave, onMove, isFirst, isLast,
+}: {
+  section: ScriptSection;
+  onSave: (key: string, text: string) => void;
+  onMove: (key: string, direction: 'up' | 'down') => void;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   return (
     <div className="bg-zinc-950 border border-zinc-700 rounded-lg p-3">
-      <div className="text-xs uppercase tracking-wide text-zinc-400 font-semibold mb-1.5">
-        {SCRIPT_LABELS[section.key] ?? section.key}
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="text-xs uppercase tracking-wide text-zinc-400 font-semibold">
+          {SCRIPT_LABELS[section.key] ?? section.key}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => onMove(section.key, 'up')}
+            disabled={isFirst}
+            className="text-zinc-500 hover:text-zinc-200 disabled:opacity-20 disabled:hover:text-zinc-500 text-xs px-1 leading-none"
+            title="Move up"
+          >
+            ▲
+          </button>
+          <button
+            onClick={() => onMove(section.key, 'down')}
+            disabled={isLast}
+            className="text-zinc-500 hover:text-zinc-200 disabled:opacity-20 disabled:hover:text-zinc-500 text-xs px-1 leading-none"
+            title="Move down"
+          >
+            ▼
+          </button>
+        </div>
       </div>
       <div
         contentEditable
@@ -155,6 +183,26 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
     saveCallScript(fullText);
   }
 
+  function handleSectionMove(key: string, direction: 'up' | 'down') {
+    if (!app) return;
+    const inGroup = SCRIPT_LEFT_KEYS.has(key)
+      ? (k: string) => SCRIPT_LEFT_KEYS.has(k)
+      : (k: string) => !SCRIPT_LEFT_KEYS.has(k);
+    const groupIndices = sections.reduce<number[]>((acc, s, i) => (inGroup(s.key) ? [...acc, i] : acc), []);
+    const posInGroup = groupIndices.findIndex(i => sections[i].key === key);
+    const targetPos = direction === 'up' ? posInGroup - 1 : posInGroup + 1;
+    if (targetPos < 0 || targetPos >= groupIndices.length) return;
+
+    const a = groupIndices[posInGroup];
+    const b = groupIndices[targetPos];
+    const updated = [...sections];
+    [updated[a], updated[b]] = [updated[b], updated[a]];
+
+    const fullText = buildScript(updated);
+    setApp({ ...app, call_script: fullText });
+    saveCallScript(fullText);
+  }
+
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -222,14 +270,28 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
             <div className="grid grid-cols-2 gap-4 p-4">
               <div className="space-y-3">
                 <div className="text-xs uppercase tracking-wide text-zinc-300 font-semibold px-1">Quick Reference</div>
-                {sections.filter(s => SCRIPT_LEFT_KEYS.has(s.key)).map(s => (
-                  <ScriptBox key={s.key} section={s} onSave={handleSectionBlur} />
+                {sections.filter(s => SCRIPT_LEFT_KEYS.has(s.key)).map((s, i, arr) => (
+                  <ScriptBox
+                    key={s.key}
+                    section={s}
+                    onSave={handleSectionBlur}
+                    onMove={handleSectionMove}
+                    isFirst={i === 0}
+                    isLast={i === arr.length - 1}
+                  />
                 ))}
               </div>
               <div className="space-y-3">
                 <div className="text-xs uppercase tracking-wide text-zinc-300 font-semibold px-1">Call Flow</div>
-                {sections.filter(s => !SCRIPT_LEFT_KEYS.has(s.key)).map(s => (
-                  <ScriptBox key={s.key} section={s} onSave={handleSectionBlur} />
+                {sections.filter(s => !SCRIPT_LEFT_KEYS.has(s.key)).map((s, i, arr) => (
+                  <ScriptBox
+                    key={s.key}
+                    section={s}
+                    onSave={handleSectionBlur}
+                    onMove={handleSectionMove}
+                    isFirst={i === 0}
+                    isLast={i === arr.length - 1}
+                  />
                 ))}
               </div>
             </div>
