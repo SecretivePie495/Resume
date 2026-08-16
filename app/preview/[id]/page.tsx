@@ -43,11 +43,12 @@ function buildScript(sections: ScriptSection[]): string {
 }
 
 function ScriptBox({
-  section, onSave, onMove, isFirst, isLast,
+  section, onSave, onMove, onRemove, isFirst, isLast,
 }: {
   section: ScriptSection;
   onSave: (key: string, text: string) => void;
   onMove: (key: string, direction: 'up' | 'down') => void;
+  onRemove: (key: string) => void;
   isFirst: boolean;
   isLast: boolean;
 }) {
@@ -73,6 +74,13 @@ function ScriptBox({
             title="Move down"
           >
             ▼
+          </button>
+          <button
+            onClick={() => onRemove(section.key)}
+            className="text-zinc-500 hover:text-red-400 text-xs px-1 leading-none"
+            title="Remove section"
+          >
+            ✕
           </button>
         </div>
       </div>
@@ -203,6 +211,14 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
     saveCallScript(fullText);
   }
 
+  function handleSectionRemove(key: string) {
+    if (!app) return;
+    const updated = sections.filter(s => s.key !== key);
+    const fullText = buildScript(updated);
+    setApp({ ...app, call_script: fullText });
+    saveCallScript(fullText);
+  }
+
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -276,6 +292,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                     section={s}
                     onSave={handleSectionBlur}
                     onMove={handleSectionMove}
+                    onRemove={handleSectionRemove}
                     isFirst={i === 0}
                     isLast={i === arr.length - 1}
                   />
@@ -289,6 +306,7 @@ export default function PreviewPage({ params }: { params: Promise<{ id: string }
                     section={s}
                     onSave={handleSectionBlur}
                     onMove={handleSectionMove}
+                    onRemove={handleSectionRemove}
                     isFirst={i === 0}
                     isLast={i === arr.length - 1}
                   />
