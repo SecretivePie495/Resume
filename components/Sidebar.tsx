@@ -11,6 +11,7 @@ const NAV = [
   { href: '/quick',     label: 'Quick Tailor' },
   { href: '/generate',  label: 'Resume Builder' },
   { href: '/jobs',      label: 'AI Tailor' },
+  { href: '/cold-call', label: 'Cold Call' },
   { href: '/style',     label: 'Style' },
 ];
 

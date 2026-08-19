@@ -51,6 +51,21 @@ export async function initDb() {
   await sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS call_script TEXT`;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS prospects (
+      id          SERIAL PRIMARY KEY,
+      user_id     TEXT NOT NULL DEFAULT 'owner',
+      business    TEXT NOT NULL,
+      category    TEXT,
+      phone       TEXT,
+      notes       TEXT,
+      score       TEXT,
+      status      TEXT NOT NULL DEFAULT 'not_called',
+      call_script TEXT,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS base_resume (
       user_id    TEXT PRIMARY KEY,
       content    TEXT NOT NULL,
@@ -180,6 +195,22 @@ export interface GmailToken {
   expiry: string | null;
 }
 
+export type ProspectStatus = 'not_called' | 'called' | 'interested' | 'not_interested';
+
+export interface Prospect {
+  id: number;
+  user_id: string;
+  business: string;
+  category: string | null;
+  phone: string | null;
+  notes: string | null;
+  score: string | null;
+  status: ProspectStatus;
+  call_script: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface JobEmail {
   id: number;
   user_id: string;
@@ -244,6 +275,51 @@ export function createDb(userId: string, userEmail?: string) {
       WHERE id = ${id} AND user_id = ${uid}`,
 
     delete: (id: number) => sql`DELETE FROM applications WHERE id = ${id} AND user_id = ${uid}`,
+  };
+
+  // ── Prospects (cold call list) ────────────────────────────────────────────────
+
+  const prospectQueries = {
+    list: () =>
+      sql`
+        SELECT * FROM prospects WHERE user_id = ${uid}
+        ORDER BY
+          CASE lower(score) WHEN 'hot' THEN 0 WHEN 'warm' THEN 1 ELSE 2 END,
+          created_at DESC` as unknown as Promise<Prospect[]>,
+
+    get: async (id: number): Promise<Prospect | undefined> => {
+      const rows = await sql`SELECT * FROM prospects WHERE id = ${id} AND user_id = ${uid}`;
+      return rows[0] as Prospect | undefined;
+    },
+
+    insertMany: async (rows: Array<{
+      business: string; category: string | null; phone: string | null;
+      notes: string | null; score: string | null;
+    }>): Promise<number> => {
+      let count = 0;
+      for (const r of rows) {
+        if (!r.business?.trim()) continue;
+        await sql`
+          INSERT INTO prospects (user_id, business, category, phone, notes, score)
+          VALUES (${uid}, ${r.business}, ${r.category}, ${r.phone}, ${r.notes}, ${r.score})`;
+        count++;
+      }
+      return count;
+    },
+
+    updateStatus: (status: ProspectStatus, id: number) => sql`
+      UPDATE prospects SET status = ${status}, updated_at = NOW()
+      WHERE id = ${id} AND user_id = ${uid}`,
+
+    updateNotes: (notes: string, id: number) => sql`
+      UPDATE prospects SET notes = ${notes}, updated_at = NOW()
+      WHERE id = ${id} AND user_id = ${uid}`,
+
+    updateCallScript: (callScript: string, id: number) => sql`
+      UPDATE prospects SET call_script = ${callScript}, updated_at = NOW()
+      WHERE id = ${id} AND user_id = ${uid}`,
+
+    delete: (id: number) => sql`DELETE FROM prospects WHERE id = ${id} AND user_id = ${uid}`,
   };
 
   // ── Settings / Usage ─────────────────────────────────────────────────────────
@@ -461,6 +537,7 @@ export function createDb(userId: string, userEmail?: string) {
 
   return {
     queries,
+    prospectQueries,
     resumeQueries,
     styleQueries,
     pulledJobQueries,

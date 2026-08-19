@@ -83,6 +83,123 @@ OBJECTIONS
 VOICEMAIL
 A short fallback script (2-3 sentences) to leave if the call goes to voicemail, referencing the role.`;
 
+const UTG_OFFER = `UTG LABS — OFFER FACTS (ground truth, do not drift from this or invent anything beyond it)
+
+One-liner: "You never lose a customer to a slow reply again. Every DM, message, and email lands in one inbox. We answer in minutes, not hours."
+
+Mechanics: We run the business's whole customer support inbox for them — Instagram, Facebook, WhatsApp, and email all land in one place. A REAL PERSON on the UTG Labs team writes and sends every reply personally, in the business's own voice. This is a done-for-you managed service, not software the business operates themselves.
+
+CRITICAL RULE: Never describe this as AI-drafted, AI-powered, automated, a bot, or a tool. It is a human team, full stop. If asked "is this a chatbot?" the answer is: "No — a real person on my team replies to every message by hand, in the business's real voice. The business never has to touch it."
+
+What's included: one inbox instead of checking 4-5 apps; a real person writes/sends every reply in the business's voice; hot leads and angry customers get flagged first; fast answers to common questions; follow-up with anyone who goes quiet so no lead disappears; replies in the customer's own language; a monthly report on speed and what was caught/saved.
+
+Pricing: $2,000-5,000 one-time setup, $500-2,000/month managed retainer.
+
+Vertical pain-point lines (use the one matching the business's category, otherwise use the general one-liner):
+- Cleaning companies: "Every DM you miss could be a $400-800/mo client walking to someone else."
+- Salon / beauty / med spa: "People stop waiting after an hour. We make sure yours never do."
+- Event planners: "A big inquiry deserves a same-minute reply, not a same-day one."
+- Personal trainers / fitness: "Your DMs are your business — we make sure none of them go quiet."
+- Real estate: "A buyer messages you at 9pm, you see it in the morning, they already called another agent."
+- Auto repair / HVAC / home services: "A missed call during a breakdown is a job that just went to the next name on Google."
+- Dental / medical practice: "Patients calling about pain don't wait around for a callback."
+
+Soft close (use verbatim or close to it): "Want me to show you with your real inbox? 15 minutes, no pitch — just a live look at what it'd catch."`;
+
+const PROSPECT_PARSE_SYSTEM = `You extract a list of business prospects from freeform pasted text (a markdown table, a plain list, notes, anything) and return ONLY a valid JSON array, no markdown, no explanation.
+
+Each element must be an object with exactly these fields:
+- business: string, the business name (required — skip any entry with no discernible business name)
+- category: string or null, the business type/vertical (e.g. "Salon", "HVAC", "Dental") if stated or clearly inferable, else null
+- phone: string or null, the phone number exactly as given, else null
+- score: string or null, one of "Hot", "Warm", "Cold" if the source text scores/ranks the prospect, else null
+- notes: string or null, a short (<200 char) note capturing why it's a good prospect or any other relevant detail given in the source text, else null
+
+Return every distinct business found in the text as one array element. If the text contains no identifiable businesses, return an empty array [].`;
+
+const COLD_CALL_SCRIPT_SYSTEM = `You are writing a cold-call script for Udo Onyekwere, founder of UTG Labs, to use when calling a local small business to pitch UTG Labs' customer support inbox service.
+
+${UTG_OFFER}
+
+The OPENER and IF-OWNER sections are fixed and provided to you separately — OPENER covers the greeting and figuring out if the owner/decision-maker is on the line; IF-OWNER covers the transition once the owner is confirmed. Do not write either of those. Start your output directly with PITCH.
+
+Output plain text only — no markdown, no asterisks, no bracketed stage directions except literal [Name] placeholders. Use the exact section headers below in this order, each in ALL CAPS on its own line, followed by a blank line, then the content.
+
+PITCH
+3-4 sentences. Lead with the vertical-specific pain-point line for this business's category (fall back to the general one-liner if no category is given or none matches). Then briefly explain the offer mechanics in plain, human language — one real inbox, a real person on the team replying fast, nothing sits unanswered. Ground every claim ONLY in the OFFER FACTS above — never invent pricing, features, or claims not listed there, and never call it AI/automated/a bot/a tool.
+
+CLOSE
+1-2 sentences using the soft close from the OFFER FACTS (verbatim or a close paraphrase) — asking to look at their real inbox for 15 minutes, no pitch.
+
+OBJECTIONS
+4-6 lines, each formatted exactly as "THEY SAY: ... / YOU SAY: ..." — the most likely pushback from a small business owner on a cold call (e.g. "we're not interested," "how much does this cost," "just email me," "we already handle our own messages fine," "no time right now," "is this some AI thing"). Each YOU SAY response should redirect gracefully, stay grounded in the OFFER FACTS, never argue, and never claim anything false.
+
+VOICEMAIL
+A short fallback script (2-3 sentences) to leave if it goes to voicemail, referencing the business by name and the one-liner.`;
+
+function buildColdCallOpener(business: string): string {
+  const name = business?.trim() || 'the business';
+  return [
+    'OPENER',
+    '',
+    `"Hey, is this ${name}?"`,
+    '',
+    '"Hey, this is Udo — quick one, are you the owner there, or is the owner around?"',
+    '',
+    'Them: "This is her/him." / "No, she\'s out right now, this is [employee]."',
+    '',
+    'If not the owner: "No worries at all — is there a good time I could catch her/him, or a cell I could reach out on instead?" Then leave a short version of the pitch below for the employee to pass along, or plan to call back.',
+  ].join('\n');
+}
+
+function buildColdCallIfOwner(): string {
+  return [
+    'IF-OWNER',
+    '',
+    '"Oh perfect, that\'s you then — I\'ll keep this quick, got like 30 seconds?"',
+  ].join('\n');
+}
+
+export interface ParsedProspect {
+  business: string;
+  category: string | null;
+  phone: string | null;
+  score: string | null;
+  notes: string | null;
+}
+
+export async function parseProspectList(text: string): Promise<ParsedProspect[]> {
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 4000,
+    system: [{ type: 'text', text: PROSPECT_PARSE_SYSTEM, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: text.slice(0, 20000) }],
+  });
+
+  const raw = (response.content[0] as { text: string }).text.trim()
+    .replace(/^```json\s*/i, '').replace(/```\s*$/, '');
+  return JSON.parse(raw) as ParsedProspect[];
+}
+
+export async function generateColdCallScript(
+  business: string,
+  category: string | null,
+  notes: string | null,
+): Promise<string> {
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 700,
+    system: [{ type: 'text', text: COLD_CALL_SCRIPT_SYSTEM, cache_control: { type: 'ephemeral' } }],
+    messages: [{
+      role: 'user',
+      content: `BUSINESS: ${business}\nCATEGORY: ${category ?? 'Not specified'}\nNOTES: ${notes ?? 'None'}`,
+    }],
+  });
+
+  const rest = (response.content[0] as { text: string }).text.trim();
+  return `${buildColdCallOpener(business)}\n\n${buildColdCallIfOwner()}\n\n${rest}`;
+}
+
 function articleFor(word: string): string {
   return /^[aeiou]/i.test(word.trim()) ? 'an' : 'a';
 }
